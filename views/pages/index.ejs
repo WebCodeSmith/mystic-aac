@@ -1,0 +1,200 @@
+<%- include('../partials/head', { title: 'Início', extraCSS: '/index-animations.css' }) %>
+
+<div class="home-container">
+    <div class="hero-section animate__animated animate__fadeIn">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="glitch" data-text="<%= serverName %>"><%= serverName %></h1>
+                <p class="typing-effect">Explore um mundo de aventuras e desafios épicos!</p>
+            </div>
+            
+            <div class="server-stats animate__animated animate__slideInUp">
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-users" aria-label="Jogadores Online"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number" data-target="<%= typeof onlinePlayers !== 'undefined' ? onlinePlayers : 0 %>">0</span>
+                        <span class="stat-label">Jogadores Online</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-server" aria-label="Máximo de Jogadores"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number" data-target="<%= typeof maxPlayers !== 'undefined' ? maxPlayers : 0 %>">0</span>
+                        <span class="stat-label">Máximo de Jogadores</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-background">
+            <div class="hero-overlay"></div>
+            <div class="hero-particles"></div>
+        </div>
+    </div>
+
+    <div class="news-section animate__animated animate__fadeInUp">
+        <div class="section-header">
+            <h2><i class="fas fa-newspaper"></i> Últimas Notícias</h2>
+        </div>
+        <div class="news-carousel">
+            <% 
+            // Função para formatar data no formato DD.MM.YYYY
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+            news.forEach(function(item, index) { %>
+                <div class="news-card hover-lift">
+                    <div class="news-card-header">
+                        <span class="news-date"><i class="fas fa-calendar-alt"></i> <%= formatDate(item.date) %></span>
+                    </div>
+                    <div class="news-card-content">
+                        <h3 class="news-title"><%= item.title %></h3>
+                        <p class="news-summary"><%= item.summary %></p>
+                        <a href="#" class="btn btn-read-more" data-modal="newsModal<%= index %>">Saiba Mais <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+
+                <!-- Modal para cada notícia -->
+                <div id="newsModal<%= index %>" class="modal news-modal">
+                    <div class="modal-content">
+                        <span class="modal-close">&times;</span>
+                        <div class="modal-header">
+                            <h2><%= item.title %></h2>
+                        </div>
+                        <div class="modal-body">
+                            <div class="modal-text">
+                                <span class="news-date"><i class="fas fa-calendar-alt"></i> <%= formatDate(item.date) %></span>
+                                <p><%= item.fullContent || item.summary %></p>
+                            </div>
+                            <% if (item.image) { %>
+                            <div class="modal-image">
+                                <img src="<%= item.image %>" alt="<%= item.title %>">
+                            </div>
+                            <% } %>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="modal-share-icons">
+                                <a href="#" onclick="shareOnFacebook('<%= item.title %>', '<%= `/news/${item.id}` %>')"><i class="fab fa-facebook"></i></a>
+                                <a href="#" onclick="shareOnTwitter('<%= item.title %>', '<%= `/news/${item.id}` %>')"><i class="fab fa-twitter"></i></a>
+                                <a href="#" onclick="copyNewsLink('<%= index %>')"><i class="fas fa-link"></i></a>
+                            </div>
+                            <a href="/news/<%= item.id %>" class="btn-read-more modal-action">Leia Completo <i class="fas fa-external-link-alt"></i></a>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <div class="featured-section animate__animated animate__zoomIn">
+        <div class="featured-content">
+            <h3 class="featured-title">Destaques<span class="highlight-yellow"></span> do Servidor</h3>
+            <p class="featured-summary">Descubra as últimas atualizações e eventos incríveis!</p>
+            
+            <div class="featured-highlights">
+                <div class="featured-highlight-item">
+                    <span class="highlight-text">Novo sistema de progressão de personagens</span>
+                </div>
+                <div class="featured-highlight-item">
+                    <span class="highlight-text">Novos Eventos semanais com recompensas exclusivas</span>
+                </div>
+                <div class="featured-highlight-item">
+                    <span class="highlight-text">Novo sistema de combate e habilidades</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .featured-section {
+        background-color: var(--primary-color);
+        padding: 40px 0;
+        text-align: center;
+    }
+
+    .featured-content {
+        max-width: 800px;
+        margin: 0 auto;
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .featured-title {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .highlight-yellow {
+        color: var(--accent-color);
+        font-weight: bold;
+    }
+
+    .featured-summary {
+        font-size: 1.1rem;
+        opacity: 0.8;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .featured-highlights {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .featured-highlight-item {
+        width: 100%;
+        padding: 10px;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 5px;
+        text-align: center;
+    }
+
+    .highlight-text {
+        font-size: 1rem;
+        opacity: 0.9;
+        display: block;
+    }
+    </style>
+
+    <div class="top-players-section animate__animated animate__slideInRight">
+        <div class="section-header">
+            <h2><i class="fas fa-trophy"></i> Top Players</h2>
+        </div>
+        <div class="players-grid">
+            <% topPlayers.forEach(function(player, index) { %>
+                <div class="player-card hover-grow">
+                    <div class="player-rank">#<%= index + 1 %></div>
+                    <div class="player-avatar">
+                        <img src="/images/avatars/<%= player.avatar || 'default.png' %>" alt="<%= player.name %>">
+                    </div>
+                    <div class="player-info">
+                        <h3><%= player.name %></h3>
+                        <div class="player-details">
+                            <span class="player-level">Nível <%= player.level %></span>
+                            <span class="player-vocation"><%= player.vocation %></span>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/home.min.js" defer></script>

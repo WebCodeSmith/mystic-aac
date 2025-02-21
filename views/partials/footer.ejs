@@ -1,0 +1,25 @@
+    </main>
+</div> <!-- container end -->
+    
+<div class="server-info">
+    Server Status: <span class="status-text"><%= typeof serverStatus !== 'undefined' ? serverStatus : 'Offline' %></span>
+    Players Online: <%= typeof onlinePlayers !== 'undefined' ? onlinePlayers : 0 %> / <%= typeof maxPlayers !== 'undefined' ? maxPlayers : 0 %>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <div class="social-links">
+            <a href="#" class="social-icon"><i class="fab fa-discord"></i></a>
+            <a href="#" class="social-icon"><i class="fab fa-facebook"></i></a>
+            <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+        </div>
+    </div>
+</footer>
+
+<div class="bottom-footer">
+    <p>&copy; 2025 Meu Servidor de Tibia. Tibia é marca registrada da CipSoft GmbH.</p>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

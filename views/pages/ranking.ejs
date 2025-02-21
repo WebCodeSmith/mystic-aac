@@ -1,0 +1,27 @@
+<%- include('../partials/head') %>
+    <section class="ranking">
+        <h1>Top Jogadores</h1>
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Posição</th>
+                    <th>Nome</th>
+                    <th>Nível</th>
+                    <th>Vocação</th>
+                    <th>Experiência</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% topPlayers.forEach(function(player, index) { %>
+                    <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= player.name %></td>
+                        <td><%= player.level %></td>
+                        <td><%= player.vocation %></td>
+                        <td><%= player.experience.toLocaleString() %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </section>
+<%- include('../partials/footer', { serverName: 'Meu Servidor de Tibia', onlinePlayers: 42, maxPlayers: 500 }) %>

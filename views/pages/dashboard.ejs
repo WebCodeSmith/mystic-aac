@@ -1,0 +1,180 @@
+<%- include('../partials/head', { title: 'Painel do Jogador', extraCSS: '/dashboard.css' }) %>
+
+<div class="dashboard-container">
+    <div class="dashboard-sidebar">
+        <div class="dashboard-profile">
+            <img src="<%= player && player.avatar ? player.avatar : '/images/default-avatar.png' %>" alt="Avatar" class="dashboard-profile-image">
+            <div class="dashboard-profile-name"><%= player ? player.name : user.username %></div>
+            <div class="dashboard-profile-level">
+                <% if (player) { %>
+                    Nível <%= player.level || 1 %> | <%= player.vocation %>
+                <% } else { %>
+                    Nível 1
+                <% } %>
+            </div>
+        </div>
+
+        <ul class="dashboard-menu">
+            <li class="dashboard-menu-item">
+                <a href="#overview" class="active">
+                    <i class="fas fa-home"></i> Visão Geral
+                </a>
+            </li>
+            <li class="dashboard-menu-item">
+                <a href="#characters">
+                    <i class="fas fa-users"></i> Personagens
+                </a>
+            </li>
+            <li class="dashboard-menu-item">
+                <a href="#account">
+                    <i class="fas fa-user-cog"></i> Configurações
+                </a>
+            </li>
+            <li class="dashboard-menu-item">
+                <a href="#premium">
+                    <i class="fas fa-crown"></i> Premium
+                </a>
+            </li>
+            <li class="dashboard-menu-item">
+                <a href="/logout">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="dashboard-content">
+        <div class="dashboard-header">
+            <div class="dashboard-title">
+                <h1>Painel do Jogador: <%= user.username %></h1>
+            </div>
+            <div class="dashboard-actions">
+                <button class="btn-primary">Editar Perfil</button>
+            </div>
+        </div>
+
+        <div class="dashboard-stats">
+            <div class="dashboard-stat-card">
+                <h3>Informações da Conta</h3>
+                <p>Último Login: <%= user.lastLogin ? user.lastLogin.toLocaleString() : 'Nunca' %></p>
+                <p>Status: <%= user.isActive ? 'Ativo' : 'Inativo' %></p>
+            </div>
+
+            <% if (player) { %>
+            <div class="dashboard-stat-card">
+                <h3>Informações do Personagem</h3>
+                <p>Nome: <%= player.name %></p>
+                <p>Nível: <%= player.level %></p>
+                <p>Vocação: <%= player.vocation %></p>
+                <p>Experiência: <%= player.experience.toLocaleString() %></p>
+            </div>
+            <% } %>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h2>Personagens</h2>
+                <button class="btn-primary">Criar Personagem</button>
+            </div>
+            <div class="character-list">
+                <% if (player) { %>
+                <div class="character-card">
+                    <img src="/images/character-knight.png" alt="Personagem" class="character-card-image">
+                    <div class="character-card-name"><%= player.name %></div>
+                    <div class="character-card-details"><%= player.vocation %> | Nível <%= player.level %> | <%= player.experience.toLocaleString() %> EXP</div>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="dashboard-card news-section">
+            <div class="dashboard-card-header">
+                <h2>Últimas Notícias</h2>
+                <div class="dashboard-card-actions">
+                    <a href="/news/create" class="btn btn-primary mr-2 no-underline">
+                        <i class="fas fa-plus"></i> Criar Notícia
+                    </a>
+                </div>
+            </div>
+            <div id="newsList">
+                <% if (locals.news && news.length > 0) { %>
+                    <% news.forEach(function(newsItem) { %>
+                        <div class="news-item">
+                            <div class="news-item-header">
+                                <h3><%= newsItem.title %></h3>
+                                <div class="news-item-actions">
+                                    <a href="/news/edit/<%= newsItem.id %>" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    <button class="btn btn-sm btn-danger delete-news-btn" data-news-id="<%= newsItem.id %>">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                </div>
+                            </div>
+                            <p><%= newsItem.summary %></p>
+                            <small class="news-date">
+                                <i class="fas fa-calendar-alt"></i> <%= new Date(newsItem.date).toLocaleString() %>
+                            </small>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <p>Nenhuma notícia disponível no momento.</p>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h2>Últimas Atividades</h2>
+            </div>
+            <ul>
+                <% if (player) { %>
+                <li>Completou a missão "Caverna dos Dragões"</li>
+                <li>Ganhou 50.000 de experiência</li>
+                <li>Adquiriu novo item lendário</li>
+                <% } %>
+            </ul>
+        </div>
+    </div>
+</div>
+<%- include('../partials/footer') %>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const newsList = document.getElementById('newsList');
+    
+    newsList.addEventListener('click', async (event) => {
+        const deleteButton = event.target.closest('.delete-news-btn');
+        
+        if (deleteButton) {
+            const newsId = deleteButton.dataset.newsId;
+            
+            const confirmDelete = confirm('Tem certeza que deseja excluir esta notícia?');
+            
+            if (confirmDelete) {
+                try {
+                    const response = await fetch(`/news/delete/${newsId}`, { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const newsItem = deleteButton.closest('.news-item');
+                        newsItem.remove();
+                        alert('Notícia excluída com sucesso!');
+                    } else {
+                        alert(result.message || 'Erro ao excluir notícia. Tente novamente.');
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                    alert('Erro ao excluir notícia. Verifique sua conexão.');
+                }
+            }
+        }
+    });
+});
+</script>

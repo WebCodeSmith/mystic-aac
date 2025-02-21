@@ -1,0 +1,23 @@
+<%- include('../partials/head') %>
+    <section class="characters">
+        <h1>Personagens Destaque</h1>
+        <table class="characters-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Nível</th>
+                    <th>Vocação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% characters.forEach(function(character) { %>
+                    <tr>
+                        <td><%= character.name %></td>
+                        <td><%= character.level %></td>
+                        <td><%= character.vocation %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </section>
+<%- include('../partials/footer', { serverName: 'Meu Servidor de Tibia', onlinePlayers: 42, maxPlayers: 500 }) %>

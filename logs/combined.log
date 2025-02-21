@@ -1,0 +1,78 @@
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:25:26.576Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:25:27.699Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:25:27"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:25:27.704Z"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:33.760Z\"}","service":"server","timestamp":"2025-02-21 16:25:33"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:33.760Z\",\"status\":200,\"responsetime\":\"11ms\"}","service":"server","timestamp":"2025-02-21 16:25:33"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:34.943Z\"}","service":"server","timestamp":"2025-02-21 16:25:34"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:34.943Z\",\"status\":200,\"responsetime\":\"2ms\"}","service":"server","timestamp":"2025-02-21 16:25:34"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:37.886Z\"}","service":"server","timestamp":"2025-02-21 16:25:37"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:37.886Z\",\"status\":302,\"responsetime\":\"69ms\"}","service":"server","timestamp":"2025-02-21 16:25:37"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:25:37.963Z\"}","service":"server","timestamp":"2025-02-21 16:25:37"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:25:37.963Z\",\"status\":200,\"responsetime\":\"6ms\"}","service":"server","timestamp":"2025-02-21 16:25:37"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:25:38.941Z\"}","service":"server","timestamp":"2025-02-21 16:25:38"}
+{"level":"info","message":"Logout bem-sucedido para igor","service":"server","timestamp":"2025-02-21 16:25:38"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:25:38.941Z\",\"status\":302,\"responsetime\":\"3ms\"}","service":"server","timestamp":"2025-02-21 16:25:38"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:38.949Z\"}","service":"server","timestamp":"2025-02-21 16:25:38"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:25:38.949Z\",\"status\":304,\"responsetime\":\"3ms\"}","service":"server","timestamp":"2025-02-21 16:25:38"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:25:54.792Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:25:54.826Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:25:54"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:25:54.848Z"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:00.179Z\"}","service":"server","timestamp":"2025-02-21 16:26:00"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:00.179Z\",\"status\":304,\"responsetime\":\"9ms\"}","service":"server","timestamp":"2025-02-21 16:26:00"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:01.513Z\"}","service":"server","timestamp":"2025-02-21 16:26:01"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:01.513Z\",\"status\":200,\"responsetime\":\"2ms\"}","service":"server","timestamp":"2025-02-21 16:26:01"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:05.029Z\"}","service":"server","timestamp":"2025-02-21 16:26:05"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:05.029Z\",\"status\":200,\"responsetime\":\"6ms\"}","service":"server","timestamp":"2025-02-21 16:26:05"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:08.294Z\"}","service":"server","timestamp":"2025-02-21 16:26:08"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:08.294Z\",\"status\":302,\"responsetime\":\"67ms\"}","service":"server","timestamp":"2025-02-21 16:26:08"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:26:08.370Z\"}","service":"server","timestamp":"2025-02-21 16:26:08"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:26:08.370Z\",\"status\":200,\"responsetime\":\"5ms\"}","service":"server","timestamp":"2025-02-21 16:26:08"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:26:11.642Z\"}","service":"server","timestamp":"2025-02-21 16:26:11"}
+{"level":"info","message":"Logout bem-sucedido para igor","service":"server","timestamp":"2025-02-21 16:26:11"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:26:11.642Z\",\"status\":302,\"responsetime\":\"2ms\"}","service":"server","timestamp":"2025-02-21 16:26:11"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:11.649Z\"}","service":"server","timestamp":"2025-02-21 16:26:11"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:26:11.649Z\",\"status\":304,\"responsetime\":\"4ms\"}","service":"server","timestamp":"2025-02-21 16:26:11"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:26:31.218Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:26:31.242Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:26:31"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:26:31.249Z"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:26:35.939Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:26:35.963Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:26:35"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:26:35.969Z"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:26:40.732Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:26:40.756Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:26:40"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:26:40.762Z"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:19.988Z\"}","service":"server","timestamp":"2025-02-21 16:27:19"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:19.988Z\",\"status\":200,\"responsetime\":\"9ms\"}","service":"server","timestamp":"2025-02-21 16:27:19"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:27:21.693Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:27:21.722Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:27:21"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:27:21.728Z"}
+{"level":"info","message":"🛠️ Modo de desenvolvimento ativado","service":"server","timestamp":"2025-02-21T19:27:25.139Z"}
+{"level":"info","message":"Serviço Redis","service":"server","status":"connected","timestamp":"2025-02-21T19:27:25.163Z"}
+{"level":"info","message":"✅ Conexão com Redis estabelecida com sucesso","service":"server","timestamp":"2025-02-21 16:27:25"}
+{"environment":"development","level":"info","message":"🚀 Servidor iniciado","port":3000,"service":"server","timestamp":"2025-02-21T19:27:25.170Z"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:27.955Z\"}","service":"server","timestamp":"2025-02-21 16:27:27"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:27.955Z\",\"status\":302,\"responsetime\":\"68ms\"}","service":"server","timestamp":"2025-02-21 16:27:28"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:28.033Z\"}","service":"server","timestamp":"2025-02-21 16:27:28"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:28.033Z\",\"status\":200,\"responsetime\":\"8ms\"}","service":"server","timestamp":"2025-02-21 16:27:28"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:30.489Z\"}","service":"server","timestamp":"2025-02-21 16:27:30"}
+{"level":"info","message":"Logout bem-sucedido para igor","service":"server","timestamp":"2025-02-21 16:27:30"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:30.489Z\",\"status\":302,\"responsetime\":\"2ms\"}","service":"server","timestamp":"2025-02-21 16:27:30"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:30.497Z\"}","service":"server","timestamp":"2025-02-21 16:27:30"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:30.497Z\",\"status\":304,\"responsetime\":\"4ms\"}","service":"server","timestamp":"2025-02-21 16:27:30"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:31.663Z\"}","service":"server","timestamp":"2025-02-21 16:27:31"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:31.663Z\",\"status\":200,\"responsetime\":\"2ms\"}","service":"server","timestamp":"2025-02-21 16:27:31"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:34.331Z\"}","service":"server","timestamp":"2025-02-21 16:27:34"}
+{"level":"info","message":"{\"method\":\"POST\",\"path\":\"/account/login\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:34.331Z\",\"status\":302,\"responsetime\":\"63ms\"}","service":"server","timestamp":"2025-02-21 16:27:34"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:34.401Z\"}","service":"server","timestamp":"2025-02-21 16:27:34"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/dashboard\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:34.401Z\",\"status\":200,\"responsetime\":\"3ms\"}","service":"server","timestamp":"2025-02-21 16:27:34"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:36.080Z\"}","service":"server","timestamp":"2025-02-21 16:27:36"}
+{"level":"info","message":"Logout bem-sucedido para igor","service":"server","timestamp":"2025-02-21 16:27:36"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/logout\",\"ip\":\"::1\",\"user\":\"igor\",\"timestamp\":\"2025-02-21T19:27:36.080Z\",\"status\":302,\"responsetime\":\"1ms\"}","service":"server","timestamp":"2025-02-21 16:27:36"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:36.086Z\"}","service":"server","timestamp":"2025-02-21 16:27:36"}
+{"level":"info","message":"{\"method\":\"GET\",\"path\":\"/\",\"ip\":\"::1\",\"user\":\"Anônimo\",\"timestamp\":\"2025-02-21T19:27:36.086Z\",\"status\":304,\"responsetime\":\"3ms\"}","service":"server","timestamp":"2025-02-21 16:27:36"}

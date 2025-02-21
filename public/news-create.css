@@ -1,0 +1,151 @@
+/* Estilos específicos para a página de criação de notícias */
+
+.content-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 100px);
+    background-color: var(--background-color);
+    padding: 20px;
+    width: 100%;
+}
+
+.news-create-section {
+    width: 100%;
+    max-width: 700px;
+    background-color: transparent;
+}
+
+.news-create-card {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: var(--accent-color);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-title i {
+    margin-right: 10px;
+}
+
+.card-subtitle {
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+.card-body {
+    padding: 30px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-label {
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.form-label i {
+    margin-right: 10px;
+    color: var(--accent-color);
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.form-control {
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    background-color: var(--primary-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25);
+    color: var(--text-color);
+}
+
+.input-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48%;
+    padding: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--primary-color);
+}
+
+.btn-secondary {
+    background-color: var(--primary-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-primary i, .btn-secondary i {
+    margin-right: 8px;
+}
+
+.btn-primary:hover, 
+.btn-secondary:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 20px;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
