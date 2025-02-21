@@ -54,6 +54,54 @@ redis-cli ping
 # Should return "PONG"
 ```
 
+## Database Configuration
+
+### Prisma ORM
+
+#### Prerequisites
+- Node.js installed
+- MySQL configured
+
+#### Install Dependencies
+```bash
+npm install
+```
+
+### Database Setup
+
+1. Copy `.env.example` to `.env` and configure your `DATABASE_URL`
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Generate Prisma Client
+   ```bash
+   npx prisma generate
+   ```
+
+3. Create or Update Migrations
+   ```bash
+   # Create a new migration based on schema changes
+   npx prisma migrate dev --name init
+
+   # Apply migrations in production
+   npx prisma migrate deploy
+   ```
+
+4. Database Utilities (Optional)
+   ```bash
+   # Open database viewer
+   npx prisma studio
+
+   # Reset database (CAUTION: Deletes all data)
+   npx prisma migrate reset
+   ```
+
+### Troubleshooting
+- Verify `DATABASE_URL` in `.env` is correct
+- Ensure MySQL is running
+- Confirm database user has sufficient permissions
+
 ## Setup
 1. Clone the repository
 2. Run `npm install`
