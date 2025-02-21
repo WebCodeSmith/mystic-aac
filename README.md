@@ -54,6 +54,54 @@ redis-cli ping
 # Should return "PONG"
 ```
 
+## Package Management
+
+### pnpm
+
+#### Prerequisites
+- Node.js installed (version 16.14 or later recommended)
+
+#### Install pnpm
+```bash
+npm install -g pnpm
+```
+
+#### Project Setup
+```bash
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm dev
+
+# Build project
+pnpm build
+
+# Run tests
+pnpm test
+```
+
+#### Common Commands
+```bash
+# Add a dependency
+pnpm add <package-name>
+
+# Add a dev dependency
+pnpm add -D <package-name>
+
+# Remove a dependency
+pnpm remove <package-name>
+
+# Update dependencies
+pnpm update
+```
+
+### Why pnpm?
+- Efficient disk space usage
+- Faster than npm and yarn
+- Strict dependency management
+- Supports monorepos
+
 ## Database Configuration
 
 ### Prisma ORM
@@ -64,7 +112,7 @@ redis-cli ping
 
 #### Install Dependencies
 ```bash
-npm install
+pnpm install
 ```
 
 ### Database Setup
@@ -104,11 +152,11 @@ npm install
 
 ## Setup
 1. Clone the repository
-2. Run `npm install`
+2. Run `pnpm install`
 3. Configure `.env` with Redis connection details
-4. Run `npm run dev` for development
-5. Run `npm run build` to compile TypeScript
-6. Run `npm start` to run the production build
+4. Run `pnpm dev` for development
+5. Run `pnpm build` to compile TypeScript
+6. Run `pnpm start` to run the production build
 
 ## Environment Configuration
 Create a `.env` file in the root directory with the following variables:
@@ -132,10 +180,10 @@ PORT=3000
 ```
 
 ## Development
-- `npm run dev`: Start development server
-- `npm run build`: Compile TypeScript
-- `npm run lint`: Run ESLint
-- `npm test`: Run test suite
+- `pnpm dev`: Start development server
+- `pnpm build`: Compile TypeScript
+- `pnpm lint`: Run ESLint
+- `pnpm test`: Run test suite
 
 ## Project Structure
 ```

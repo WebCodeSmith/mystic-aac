@@ -1,5 +1,5 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import prisma from '../services/prisma';
 import { User } from '../types/express-session';
 
@@ -126,7 +126,7 @@ router.post('/login', async (req: any, res: any, next: any) => {
       }
 
       // Regenerar sessão de forma segura
-      req.session.regenerate(async (err) => {
+      req.session.regenerate(async (err: Error | null) => {
         if (err) {
           console.error('Erro ao regenerar sessão:', err);
           return res.status(500).render('pages/error', {

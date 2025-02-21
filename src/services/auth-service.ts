@@ -1,6 +1,6 @@
 import prisma from './prisma';
-import bcrypt from 'bcrypt';
-import { z } from 'zod';
+import * as bcrypt from 'bcrypt';
+import * as z from 'zod';
 import logger from '../config/logger';
 
 // Esquemas de validação
@@ -112,8 +112,8 @@ export class AuthService {
         username: username.toLowerCase(),
         email: email.toLowerCase(),
         password: hashedPassword,
-        isActive: true,
-        role: 'USER'
+        role: 'USER',
+        isActive: true
       }
     });
   }

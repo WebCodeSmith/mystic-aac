@@ -13,7 +13,7 @@ import session from 'express-session';
 import compression from 'compression';
 import methodOverride from 'method-override';
 import http from 'http';
-import Redis from 'ioredis';
+import Redis from 'ioredis'; // Importar Redis
 import * as connectRedisModule from 'connect-redis';
 import crypto from 'crypto';
 
@@ -51,6 +51,16 @@ interface EnvironmentConfig {
   corsOrigin: string[];
   serverName: string;
   nodeEnv: NodeEnvironment;
+  redisHost: string; // Adicionar propriedade redisHost
+  redisPort: number; // Adicionar propriedade redisPort
+  redisDb: number; // Adicionar propriedade redisDb
+}
+
+interface CompressionOptions {
+  filter?: (req: Request, res: Response) => boolean;
+  threshold?: number | string;
+  level?: number;
+  chunkSize?: number;
 }
 
 class Server {
@@ -58,13 +68,20 @@ class Server {
   private server: http.Server | null = null;
   private port: number;
   private config: EnvironmentConfig;
-  private redisClient: Redis;
+  private redisClient: Redis; // Adicionar tipo Redis
 
   constructor() {
     this.app = express();
     this.config = this.loadEnvironmentConfig();
     this.port = this.config.port;
     
+    // Inicializar redisClient no construtor
+    this.redisClient = new Redis({
+      host: this.config.redisHost,
+      port: this.config.redisPort,
+      db: this.config.redisDb
+    });
+
     this.validateEnvironmentConfig(this.config);
     this.configureStaticFiles();
     this.initializeMiddleware();
@@ -83,7 +100,10 @@ class Server {
       sessionSecret: 'default_secret_key',
       corsOrigin: ['http://localhost:3000'],
       serverName: 'LocalServer',
-      nodeEnv
+      nodeEnv,
+      redisHost: 'localhost', // Adicionar valor padrão para redisHost
+      redisPort: 6379, // Adicionar valor padrão para redisPort
+      redisDb: 0 // Adicionar valor padrão para redisDb
     };
 
     // Sobrescrever configurações padrão com variáveis de ambiente
@@ -93,7 +113,10 @@ class Server {
       sessionSecret: process.env.SESSION_SECRET || defaultConfig.sessionSecret,
       corsOrigin: process.env.CORS_ORIGIN?.split(',') || defaultConfig.corsOrigin,
       serverName: process.env.SERVER_NAME || defaultConfig.serverName,
-      nodeEnv
+      nodeEnv,
+      redisHost: process.env.REDIS_HOST || defaultConfig.redisHost, // Adicionar valor para redisHost
+      redisPort: parseInt(process.env.REDIS_PORT || '6379', 10), // Adicionar valor para redisPort
+      redisDb: parseInt(process.env.REDIS_DB || '0', 10) // Adicionar valor para redisDb
     };
 
     return config;
@@ -105,7 +128,10 @@ class Server {
       'databaseUrl', 
       'sessionSecret', 
       'corsOrigin', 
-      'serverName'
+      'serverName',
+      'redisHost', // Adicionar redisHost
+      'redisPort', // Adicionar redisPort
+      'redisDb' // Adicionar redisDb
     ];
 
     const missingVars = requiredVars.filter(varName => {
@@ -167,19 +193,6 @@ class Server {
 
   private async initializeMiddleware() {
     // Configuração do Redis com opções de reconexão
-    this.redisClient = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      db: parseInt(process.env.REDIS_DB || '0', 10),
-      password: process.env.REDIS_PASSWORD,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        logger.warn(`Tentativa de reconexão Redis (${times}). Próxima em ${delay}ms`);
-        return delay;
-      },
-      maxRetriesPerRequest: 3
-    });
-
     this.redisClient.on('error', (err) => {
       logger.error('Erro na conexão Redis:', err);
     });
@@ -238,7 +251,14 @@ class Server {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(methodOverride());
-    this.app.use(compression());
+    this.app.use(compression({ 
+      filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+          return false;
+        }
+        return compression.filter(req, res);
+      }
+    } as CompressionOptions)); 
     this.app.use(globalLogger);
 
     // Configuração do template engine

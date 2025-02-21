@@ -22,7 +22,7 @@ export function globalLogger(req: Request, res: Response, next: NextFunction) {
   
   // Substituir o método end original para calcular o tempo de resposta
   const originalEnd = res.end;
-  res.end = function(...args: any[]) {
+  res.end = function (...args: any[]) {
     const duration = Date.now() - start;
     
     // Log de conclusão da requisição
@@ -32,7 +32,7 @@ export function globalLogger(req: Request, res: Response, next: NextFunction) {
       responsetime: `${duration}ms`
     }));
 
-    return originalEnd.apply(this, args);
+    return originalEnd.apply(this, args as Parameters<typeof originalEnd>);
   };
 
   next();

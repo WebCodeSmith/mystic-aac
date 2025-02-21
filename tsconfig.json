@@ -9,16 +9,22 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./public/js",
-    "rootDir": "./public/js",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "sourceMap": false,
     "removeComments": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": [
+      "./node_modules/@types", 
+      "./src/types"
+    ],
+    "paths": {
+      "bcrypt": ["./src/types/bcrypt.d.ts"]
+    }
   },
   "include": [
-    "public/js/**/*.ts",
+    "src/**/*.ts",
     "src/types/**/*.d.ts"
   ],
   "exclude": [
