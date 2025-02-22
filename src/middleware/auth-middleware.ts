@@ -1,7 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { AppError } from './error-handler';
 import logger from '../config/logger';
 import { User } from '../types/express-session';
+
+// Estender o tipo da sessão para incluir a propriedade user
+declare module '@fastify/session' {
+  interface FastifySessionObject {
+    user?: User;
+  }
+}
 
 // Definir tipos de roles possíveis
 export type UserRole = 'USER' | 'ADMIN' | 'MODERATOR' | 'GUEST';
@@ -14,63 +21,120 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   'ADMIN': 4
 };
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Verificação robusta da sessão
+    if (!request.session) {
+      logger.error('ERRO: Sessão não inicializada', {
+        nodeEnv: process.env.NODE_ENV,
+        url: request.url
+      });
+      return reply.status(401).redirect('/login');
+    }
 
-  // Verificações múltiplas de autenticação
-  if (!req.session) {
-    logger.warn('Sessão não inicializada');
-    return res.status(401).redirect('/login');
+    // Verificação do usuário na sessão
+    if (!request.session.user || !request.session.user.id) {
+      logger.error('ERRO: Usuário inválido na sessão', {
+        sessionUserType: typeof request.session.user,
+        nodeEnv: process.env.NODE_ENV,
+        url: request.url
+      });
+      return reply.status(401).redirect('/login');
+    }
+
+    // Verificação adicional de permissões
+    const user = request.session.user;
+    const allowedRoles = ['admin', 'player'];
+
+    if (!allowedRoles.includes(user.role)) {
+      logger.error('ERRO: Usuário sem permissão', {
+        userRole: user.role,
+        allowedRoles,
+        nodeEnv: process.env.NODE_ENV,
+        url: request.url
+      });
+      return reply.status(403).redirect('/unauthorized');
+    }
+
+    // Verificação de status da conta
+    if (!user.isActive) {
+      logger.error('ERRO: Conta inativa', {
+        userId: user.id,
+        nodeEnv: process.env.NODE_ENV,
+        url: request.url
+      });
+      return reply.status(403).redirect('/account-inactive');
+    }
+
+    // Log de sucesso na autenticação
+    logger.info('SUCESSO: Autenticação validada', {
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      nodeEnv: process.env.NODE_ENV,
+      url: request.url
+    });
+
+    return;
+  } catch (error) {
+    // Log de erro inesperado
+    logger.error('ERRO CRÍTICO: Falha na verificação de autenticação', {
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
+      errorStack: error instanceof Error ? error.stack : 'Sem stack trace',
+      nodeEnv: process.env.NODE_ENV,
+      url: request.url
+    });
+
+    return reply.status(500).redirect('/login');
   }
-
-  if (!req.session.user) {
-    logger.warn('Tentativa de acesso não autenticado');
-    console.log('Session details:', req.session); // Add this line for more context
-    return res.status(401).redirect('/login');
-  }
-
-  // Verificação adicional de integridade do usuário
-  const user = req.session.user as User;
-  if (!user.id || !user.username) {
-    logger.error('Dados de usuário inválidos na sessão');
-    delete req.session.user;
-    return res.status(401).redirect('/login');
-  }
-
-  next();
 };
 
 export const checkPermission = (requiredRole: UserRole) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.user) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    // Obter usuário da sessão com verificação de tipo
+    const user: User | undefined = 
+      request.session && typeof request.session === 'object' 
+        ? (request.session as any).user 
+        : undefined;
+
+    if (!user) {
       logger.warn('Tentativa de acesso não autenticado com permissão específica');
       throw new AppError('Não autorizado', 401);
     }
 
-    const user = req.session.user as User;
     const userRole = user.role as UserRole;
 
+    // Verificar hierarquia de permissões
     if (ROLE_HIERARCHY[userRole] < ROLE_HIERARCHY[requiredRole]) {
       logger.warn(`Usuário ${user.username} tentou acessar recurso sem permissão`);
       throw new AppError('Permissão insuficiente', 403);
     }
-
-    next();
   };
 };
 
-export const logUserActivity = (req: Request, res: Response, next: NextFunction) => {
-  if (req.session.user) {
-    const user = req.session.user as User;
-    logger.info(`Usuário ${user.username} acessou ${req.path}`);
+export const logUserActivity = async (request: FastifyRequest, reply: FastifyReply) => {
+  // Obter usuário da sessão com verificação de tipo
+  const user: User | undefined = 
+    request.session && typeof request.session === 'object' 
+      ? (request.session as any).user 
+      : undefined;
+
+  if (user) {
+    logger.info(`Usuário ${user.username} acessou ${request.url}`);
   }
-  next();
 };
 
-export const preventAuthenticatedAccess = (req: Request, res: Response, next: NextFunction) => {
-  if (req.session.user) {
-    const user = req.session.user as User;
-    logger.warn(`Usuário ${user.username} tentou acessar página de login/registro já autenticado`);
-    return res.redirect('/dashboard');
+export const preventAuthenticatedAccess = async (request: FastifyRequest, reply: FastifyReply) => {
+  // Se já estiver logado, redirecionar para dashboard
+  if (request.session && (request.session as any).user) {
+    return reply.redirect('/dashboard');
   }
-  next();
 };
+
+// Plugin do Fastify para registrar os middlewares
+export default async function authMiddleware(fastify: FastifyInstance) {
+  fastify.decorateRequest('requireAuth', requireAuth);
+  fastify.decorateRequest('checkPermission', checkPermission);
+  fastify.decorateRequest('logUserActivity', logUserActivity);
+  fastify.decorateRequest('preventAuthenticatedAccess', preventAuthenticatedAccess);
+}

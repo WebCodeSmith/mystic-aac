@@ -1,9 +1,61 @@
+import { FastifyRequest, FastifyReply } from 'fastify';
+import { RateLimitOptions, errorResponseBuilderContext } from '@fastify/rate-limit';
+
+// Tipo personalizado para o contexto do rate limiter
+interface RateLimitContext {
+  max: number;
+  current: number;
+  remaining: number;
+  reset: number;
+}
+
 // Constantes de rate limiting
-const MAX_LOGIN_ATTEMPTS = 5;
-const BLOCK_DURATION_MINUTES = 15;
+const MAX_LOGIN_ATTEMPTS = 10;
+const BLOCK_DURATION_MINUTES = 30;
 
 // Mapa de tentativas de login
 const loginAttempts = new Map<string, { attempts: number, lastAttempt: number }>();
+
+// Constante para usuário autenticado
+const AUTHENTICATED_USER_PREFIX = 'user:';
+
+export const apiLimiter: RateLimitOptions = {
+  max: 100,
+  timeWindow: '1 minute',
+  keyGenerator: (request: FastifyRequest) => {
+    // Gerar chave de limite de taxa baseada no IP ou usuário autenticado
+    const sessionUser = request.session && typeof request.session === 'object' 
+      ? (request.session as any).user 
+      : undefined;
+
+    return sessionUser?.id 
+      ? `${AUTHENTICATED_USER_PREFIX}${sessionUser.id}` 
+      : request.ip || '127.0.0.1';
+  },
+  errorResponseBuilder: (request: FastifyRequest, context: errorResponseBuilderContext) => {
+    return {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Limite de 100 requisições por minuto excedido. Por favor, aguarde um momento.`
+    };
+  }
+};
+
+export const loginLimiter: RateLimitOptions = {
+  max: 10,
+  timeWindow: '30 minutes',
+  keyGenerator: (request: FastifyRequest) => {
+    // Limitar tentativas de login por IP
+    return request.ip || '127.0.0.1';
+  },
+  errorResponseBuilder: (request: FastifyRequest, context: errorResponseBuilderContext) => {
+    return {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Limite de 10 tentativas de login por 30 minutos excedido. Tente novamente mais tarde.`
+    };
+  }
+};
 
 export class RateLimiter {
   /**

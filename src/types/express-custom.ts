@@ -1,15 +1,12 @@
-import { Request } from 'express';
-import { Session, SessionData } from 'express-session';
+import { FastifyRequest } from 'fastify';
+import '@fastify/session';
+import { UserSession } from './express-session';
 
-export interface UserSession {
-  id: number;
-  username: string;
-  email: string;
-  role?: string;
-}
-
-export interface AuthenticatedRequest extends Request {
-  session: Session & Partial<SessionData> & {
+export type AuthenticatedRequest = FastifyRequest & {
+  session: {
     user?: UserSession;
+    get(key: string): any;
+    set(key: string, value: any): void;
+    destroy(): Promise<void>;
   };
 }

@@ -1,12 +1,9 @@
-import express, { Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth-middleware';
-import { AppError, asyncHandler } from '../middleware/error-handler';
-import { AuthenticatedRequest } from '../types/express-custom';
 import logger from '../config/logger';
 
-const router = express.Router();
 const prisma = new PrismaClient();
 
 // Esquema de validação para criação de notícia
@@ -29,217 +26,187 @@ const NewsCreateSchema = z.object({
   date: z.date().optional()
 });
 
-// Serviços de notícias com tratamento de erros centralizado
-const newsService = {
-  async findById(id: number) {
-    const news = await prisma.news.findUnique({ where: { id } });
-    if (!news) {
-      throw new AppError('Notícia não encontrada', 404);
-    }
-    return news;
-  },
+// Definir tipos para parâmetros e body
+interface NewsParams {
+  id: string;
+}
 
-  async create(data: Prisma.NewsCreateInput) {
+interface NewsBody {
+  title: string;
+  summary: string;
+  content: string;
+  date?: Date;
+}
+
+// Plugin de rotas de notícias
+export default async function newsRoutes(fastify: FastifyInstance) {
+  // Rota para listar notícias
+  fastify.get('/', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Log dos dados recebidos para depuração
-      logger.info('Dados recebidos para criação de notícia:', data);
-
-      // Validação dos dados antes da criação
-      const validatedData = NewsCreateSchema.parse({
-        title: data.title,
-        summary: data.summary,
-        content: data.content,
-        date: data.date || new Date()
+      const news = await prisma.news.findMany({
+        orderBy: { date: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          date: true
+        }
       });
-      
-      return await prisma.news.create({ 
+
+      return reply.send(news);
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        error: 'Erro ao buscar notícias', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
+  // Rota para buscar notícia por ID
+  fastify.get<{ 
+    Params: NewsParams 
+  }>('/:id', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest<{ Params: NewsParams }>, reply: FastifyReply) => {
+    const { id } = request.params;
+
+    try {
+      const news = await prisma.news.findUnique({
+        where: { id: Number(id) },
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          content: true,
+          date: true
+        }
+      });
+
+      if (!news) {
+        return reply.status(404).send({ 
+          error: 'Notícia não encontrada', 
+          message: `Não foi possível encontrar notícia com ID ${id}` 
+        });
+      }
+
+      return reply.send(news);
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        error: 'Erro ao buscar detalhes da notícia', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
+  // Rota para criar notícia
+  fastify.post<{ 
+    Body: NewsBody 
+  }>('/', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest<{ Body: NewsBody }>, reply: FastifyReply) => {
+    try {
+      const { title, summary, content, date } = request.body;
+
+      // Validação dos dados
+      const validatedData = NewsCreateSchema.parse({
+        title,
+        summary,
+        content,
+        date
+      });
+
+      const newNews = await prisma.news.create({
         data: {
-          title: validatedData.title,
-          summary: validatedData.summary,
-          content: validatedData.content,
+          ...validatedData,
           date: validatedData.date || new Date()
         }
       });
+
+      return reply.status(201).send(newNews);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        // Tratamento específico para erros de validação do Zod
-        const errorMessages = error.errors.map(err => 
-          `${err.path.join('.')}: ${err.message}`
-        ).join('; ');
-        
-        logger.error('Erro de validação ao criar notícia:', {
-          errors: error.errors,
-          input: data
-        });
-        
-        throw new AppError(`Dados inválidos: ${errorMessages}`, 400);
-      }
+      request.log.error(error);
       
-      logger.error('Erro ao criar notícia:', error);
-      throw new AppError('Não foi possível criar a notícia', 500);
-    }
-  },
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ 
+          error: 'Erro de validação', 
+          message: error.errors.map(e => e.message).join(', ') 
+        });
+      }
 
-  async update(id: number, data: Prisma.NewsUpdateInput) {
-    try {
-      await this.findById(id); // Verifica se a notícia existe
-      return await prisma.news.update({
-        where: { id },
-        data
+      return reply.status(500).send({ 
+        error: 'Erro ao criar notícia', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
       });
-    } catch (error) {
-      logger.error('Erro ao atualizar notícia:', error);
-      throw new AppError('Não foi possível atualizar a notícia', 500);
     }
-  },
+  });
 
-  async delete(id: number) {
+  // Rota para atualizar notícia
+  fastify.put<{ 
+    Params: NewsParams, 
+    Body: NewsBody 
+  }>('/:id', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest<{ Params: NewsParams, Body: NewsBody }>, reply: FastifyReply) => {
+    const { id } = request.params;
+    const { title, summary, content, date } = request.body;
+
     try {
-      await this.findById(id); // Verifica se a notícia existe
-      return await prisma.news.delete({ where: { id } });
+      // Validação dos dados
+      const validatedData = NewsCreateSchema.parse({
+        title,
+        summary,
+        content,
+        date
+      });
+
+      const updatedNews = await prisma.news.update({
+        where: { id: Number(id) },
+        data: validatedData
+      });
+
+      return reply.send(updatedNews);
     } catch (error) {
-      logger.error('Erro ao excluir notícia:', error);
-      throw new AppError('Não foi possível excluir a notícia', 500);
+      request.log.error(error);
+      
+      if (error instanceof z.ZodError) {
+        return reply.status(400).send({ 
+          error: 'Erro de validação', 
+          message: error.errors.map(e => e.message).join(', ') 
+        });
+      }
+
+      return reply.status(500).send({ 
+        error: 'Erro ao atualizar notícia', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
     }
-  }
-};
+  });
 
-// Função utilitária para renderizar resposta de erro
-function handleNewsError(res: Response, error: any, defaultMessage: string) {
-  const statusCode = error instanceof AppError ? error.statusCode : 500;
-  const message = error instanceof AppError ? error.message : defaultMessage;
+  // Rota para deletar notícia
+  fastify.delete<{ 
+    Params: NewsParams 
+  }>('/:id', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest<{ Params: NewsParams }>, reply: FastifyReply) => {
+    const { id } = request.params;
 
-  return res.status(statusCode).json({ 
-    success: false, 
-    message,
-    error: error instanceof Error ? error.message : 'Erro desconhecido'
+    try {
+      await prisma.news.delete({
+        where: { id: Number(id) }
+      });
+
+      return reply.status(204).send();
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        error: 'Erro ao deletar notícia', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
   });
 }
-
-// Rotas de visualização
-router.get('/', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const news = await prisma.news.findMany({
-    orderBy: { date: 'desc' },
-    take: 10
-  });
-
-  res.render('pages/news-create', {
-    title: 'Notícias',
-    news,
-    newsItem: null,
-    isEditing: false,
-    user: req.session.user
-  });
-}));
-
-// Rotas de criação, edição e visualização
-router.get('/create', requireAuth, (req: AuthenticatedRequest, res: Response) => {
-  res.render('pages/news-create', {
-    title: 'Criar Notícia',
-    newsItem: null,
-    isEditing: false,
-    news: [],
-    user: req.session.user
-  });
-});
-
-router.get('/:id/edit', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const newsItem = await newsService.findById(Number(id));
-
-  res.render('pages/news-create', {
-    title: 'Editar Notícia',
-    newsItem,
-    isEditing: true,
-    user: req.session.user
-  });
-}));
-
-// Rotas de criação e atualização
-router.post('/create', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { title, summary, content } = req.body;
-
-  try {
-    // Log dos dados recebidos para depuração
-    logger.info('Dados recebidos no POST /create:', { title, summary, content });
-
-    const createdNews = await newsService.create({ 
-      title, 
-      summary, 
-      content,
-      date: new Date()
-    });
-
-    // Busca as notícias para passar para o template
-    const news = await prisma.news.findMany({
-      orderBy: { date: 'desc' },
-      take: 10
-    });
-
-    res.render('pages/news-create', {
-      title: 'Notícias',
-      news,
-      newsItem: null,
-      isEditing: false,
-      user: req.session.user,
-      successMessage: 'Notícia criada com sucesso!'
-    });
-  } catch (error) {
-    // Log do erro para depuração
-    logger.error('Erro ao criar notícia:', error);
-    
-    // Busca as notícias para passar para o template
-    const news = await prisma.news.findMany({
-      orderBy: { date: 'desc' },
-      take: 10
-    });
-
-    res.render('pages/news-create', {
-      title: 'Criar Notícia',
-      news,
-      newsItem: null,
-      isEditing: false,
-      user: req.session.user,
-      error: error instanceof Error ? error.message : 'Erro ao criar notícia'
-    });
-  }
-}));
-
-router.put('/:id', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { title, summary, content } = req.body;
-
-  await newsService.update(Number(id), { 
-    title, 
-    summary, 
-    content 
-  });
-  res.redirect('/news');
-}));
-
-// Rotas de exclusão (DELETE e POST para compatibilidade)
-router.delete('/:id', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-
-  await newsService.delete(Number(id));
-  res.status(200).json({ 
-    success: true, 
-    message: 'Notícia excluída com sucesso' 
-  });
-}));
-
-router.post('/delete/:id', requireAuth, asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-
-  try {
-    await newsService.delete(Number(id));
-    res.status(200).json({ 
-      success: true, 
-      message: 'Notícia excluída com sucesso' 
-    });
-  } catch (error) {
-    handleNewsError(res, error, 'Erro ao excluir notícia');
-  }
-}));
-
-export default router;

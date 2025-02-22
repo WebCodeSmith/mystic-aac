@@ -1,7 +1,7 @@
-import 'express-session';
-import { Session, SessionData } from 'express-session';
+import 'fastify'
+import '@fastify/session'
 
-// Definição de usuário
+// Definição de usuário baseada no modelo Account
 export interface User {
   id: number;
   username: string;
@@ -13,17 +13,26 @@ export interface User {
   updatedAt: Date;
 }
 
-declare module 'express-session' {
+// Alias para compatibilidade
+export type UserSession = User;
+
+declare module '@fastify/session' {
   interface SessionData {
-    user?: User;
-    destroy?: (callback: (err?: any) => void) => void;
+    user?: User | undefined;
+    destroy?: () => Promise<void>;
   }
 }
 
-declare module 'express' {
-  interface Request {
-    session: Session & Partial<SessionData> & {
-      [key: string]: any;
+declare module 'fastify' {
+  interface FastifySessionObject {
+    user?: User | undefined;
+    get(key: string): any;
+    set(key: string, value: any): void;
+  }
+
+  interface FastifyRequest {
+    session: FastifySessionObject & {
+      destroy(): Promise<void>;
     };
   }
 }

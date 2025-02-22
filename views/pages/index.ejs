@@ -50,47 +50,30 @@
                 const year = date.getFullYear();
                 return `${day}.${month}.${year}`;
             }
-            news.forEach(function(item, index) { %>
-                <div class="news-card hover-lift">
-                    <div class="news-card-header">
-                        <span class="news-date"><i class="fas fa-calendar-alt"></i> <%= formatDate(item.date) %></span>
-                    </div>
-                    <div class="news-card-content">
-                        <h3 class="news-title"><%= item.title %></h3>
-                        <p class="news-summary"><%= item.summary %></p>
-                        <a href="#" class="btn btn-read-more" data-modal="newsModal<%= index %>">Saiba Mais <i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
 
-                <!-- Modal para cada notícia -->
-                <div id="newsModal<%= index %>" class="modal news-modal">
-                    <div class="modal-content">
-                        <span class="modal-close">&times;</span>
-                        <div class="modal-header">
-                            <h2><%= item.title %></h2>
-                        </div>
-                        <div class="modal-body">
-                            <div class="modal-text">
-                                <span class="news-date"><i class="fas fa-calendar-alt"></i> <%= formatDate(item.date) %></span>
-                                <p><%= item.fullContent || item.summary %></p>
-                            </div>
-                            <% if (item.image) { %>
-                            <div class="modal-image">
-                                <img src="<%= item.image %>" alt="<%= item.title %>">
-                            </div>
-                            <% } %>
-                        </div>
-                        <div class="modal-footer">
-                            <div class="modal-share-icons">
-                                <a href="#" onclick="shareOnFacebook('<%= item.title %>', '<%= `/news/${item.id}` %>')"><i class="fab fa-facebook"></i></a>
-                                <a href="#" onclick="shareOnTwitter('<%= item.title %>', '<%= `/news/${item.id}` %>')"><i class="fab fa-twitter"></i></a>
-                                <a href="#" onclick="copyNewsLink('<%= index %>')"><i class="fas fa-link"></i></a>
-                            </div>
-                            <a href="/news/<%= item.id %>" class="btn-read-more modal-action">Leia Completo <i class="fas fa-external-link-alt"></i></a>
-                        </div>
+            // Renderizar notícias
+            if (typeof news !== 'undefined' && news.length > 0) {
+                news.forEach(function(newsItem) { 
+            %>
+                <div class="news-item">
+                    <div class="news-header">
+                        <h3><%= newsItem.title %></h3>
+                        <span class="news-date"><%= formatDate(newsItem.date) %></span>
+                    </div>
+                    <p class="news-summary"><%= newsItem.summary %></p>
+                    <div class="news-footer">
+                        <span class="news-author">Por <%= newsItem.author.username %></span>
+                        <a href="/news/<%= newsItem.id %>" class="read-more">Leia mais</a>
                     </div>
                 </div>
-            <% }); %>
+            <% 
+                });
+            } else { 
+            %>
+                <div class="no-news">
+                    <p>Nenhuma notícia disponível no momento.</p>
+                </div>
+            <% } %>
         </div>
     </div>
 
@@ -171,26 +154,41 @@
     }
     </style>
 
-    <div class="top-players-section animate__animated animate__slideInRight">
+    <div class="players-section animate__animated animate__fadeInUp">
         <div class="section-header">
             <h2><i class="fas fa-trophy"></i> Top Players</h2>
         </div>
         <div class="players-grid">
-            <% topPlayers.forEach(function(player, index) { %>
+            <% 
+            // Renderizar top players
+            if (typeof topPlayers !== 'undefined' && topPlayers.length > 0) {
+                topPlayers.forEach(function(player, index) { 
+            %>
                 <div class="player-card hover-grow">
                     <div class="player-rank">#<%= index + 1 %></div>
                     <div class="player-avatar">
-                        <img src="/images/avatars/<%= player.avatar || 'default.png' %>" alt="<%= player.name %>">
+                        <img src="<%= player.avatar || '/images/default-avatar.png' %>" alt="Avatar de <%= player.name %>">
                     </div>
                     <div class="player-info">
-                        <h3><%= player.name %></h3>
+                        <h3 class="player-name"><%= player.name %></h3>
                         <div class="player-details">
                             <span class="player-level">Nível <%= player.level %></span>
                             <span class="player-vocation"><%= player.vocation %></span>
+                            <span class="player-username">@<%= player.username %></span>
+                        </div>
+                        <div class="player-xp">
+                            <i class="fas fa-star"></i> <%= player.experience.toLocaleString('pt-BR') %> XP
                         </div>
                     </div>
                 </div>
-            <% }); %>
+            <% 
+                });
+            } else { 
+            %>
+                <div class="no-players">
+                    <p>Nenhum jogador encontrado.</p>
+                </div>
+            <% } %>
         </div>
     </div>
 </div>

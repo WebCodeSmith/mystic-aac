@@ -1,4 +1,7 @@
 import logger from '../config/logger';
+import { FastifyInstance } from 'fastify';
+import Redis from 'ioredis';
+import { PrismaClient } from '@prisma/client';
 
 // Tipos de ambiente
 export type NodeEnvironment = 'development' | 'production' | 'test';
@@ -28,6 +31,80 @@ export class ServerErrorHandler {
         this.criticalExit(`Falha no desligamento gracioso - ${context}`, error);
       }
     };
+  }
+}
+
+// Utilitário de gerenciamento de recursos
+export class ResourceManager {
+  private resources: Map<string, any> = new Map();
+
+  register(name: string, resource: any) {
+    this.resources.set(name, resource);
+  }
+
+  // Método público para recuperar recursos
+  public get<T>(name: string): T {
+    const resource = this.resources.get(name);
+    if (!resource) {
+      throw new Error(`Recurso ${name} não encontrado`);
+    }
+    return resource;
+  }
+
+  // Método para verificar se um recurso existe
+  public hasResource(name: string): boolean {
+    return this.resources.has(name);
+  }
+
+  // Método genérico para fechar recursos
+  async closeAll() {
+    const closeTasks: Promise<void>[] = [];
+
+    // Iterar sobre todos os recursos registrados
+    for (const [name, resource] of this.resources.entries()) {
+      if (typeof resource === 'object' && resource !== null) {
+        // Verificar métodos de fechamento comuns
+        const closeMethodNames = ['close', 'quit', '$disconnect', 'disconnect'];
+        
+        for (const methodName of closeMethodNames) {
+          if (typeof (resource as any)[methodName] === 'function') {
+            try {
+              const closeTask = (resource as any)[methodName]();
+              if (closeTask instanceof Promise) {
+                closeTasks.push(closeTask);
+                break; // Parar após encontrar o primeiro método válido
+              }
+            } catch (error) {
+              console.warn(`Erro ao fechar recurso ${name} com método ${methodName}:`, error);
+            }
+          }
+        }
+      }
+    }
+
+    try {
+      await Promise.allSettled(closeTasks);
+      console.log('Todos os recursos fechados com sucesso');
+    } catch (error) {
+      console.error('Erro durante fechamento de recursos:', error);
+      throw error;
+    }
+  }
+
+  setupGracefulShutdown(context: string = 'Recursos do Servidor') {
+    const signals = ['SIGINT', 'SIGTERM'];
+    signals.forEach(signal => {
+      process.on(signal, async () => {
+        logger.info(`Recebido sinal ${signal}. Iniciando desligamento: ${context}`);
+        try {
+          await this.closeAll();
+          logger.info(`Desligamento concluído: ${context}`);
+          process.exit(0);
+        } catch (err) {
+          ServerErrorHandler.criticalExit(`Erro durante desligamento - ${context}`, err);
+        }
+      });
+    });
   }
 }
 
@@ -76,23 +153,15 @@ export class DynamicImportHelper {
 // Utilitário de logging padronizado
 export class ServerLogger {
   static serverStart(port: number, environment: NodeEnvironment) {
-    logger.info(`🚀 Servidor iniciado`, {
-      port,
-      environment,
-      timestamp: new Date().toISOString()
-    });
+    logger.info(`🚀 Servidor iniciado na porta ${port} [${environment}]`);
   }
 
   static developmentMode() {
-    logger.info('🛠️ Modo de desenvolvimento ativado', {
-      timestamp: new Date().toISOString()
-    });
+    logger.warn('🛠️ Servidor rodando em modo de desenvolvimento');
   }
 
   static serviceConnection(serviceName: string, status: 'connected' | 'disconnected') {
-    logger[status === 'connected' ? 'info' : 'warn'](`Serviço ${serviceName}`, {
-      status,
-      timestamp: new Date().toISOString()
-    });
+    const emoji = status === 'connected' ? '✅' : '❌';
+    logger.info(`${emoji} Serviço ${serviceName}: ${status}`);
   }
 }

@@ -1,39 +1,49 @@
-# Tibia Website
+# Mystic AAC - Open Tibia Server Management Platform
 
-![Site Preview](/assets/site-preview.png)
+## Descrição
+Mystic AAC é uma plataforma de gerenciamento de servidores Open Tibia, desenvolvida com tecnologias modernas para oferecer uma experiência robusta e escalável.
 
-## Prerequisites
-- Node.js (v16+)
-- npm
+## Tecnologias Principais
+- **Backend**: Fastify
+- **Banco de Dados**: Prisma ORM
+- **Autenticação**: Sessões seguras com Redis
+- **Frontend**: EJS Templates
+- **Linguagem**: TypeScript
+- **Gerenciamento de Configuração**: Zod Schema Validation
+
+## Pré-requisitos
+- Node.js (v18+)
+- pnpm ou yarn
 - Redis
+- PostgreSQL
 
-## Redis Installation
+## Instalação do Redis
 
 ### Windows
-1. **Using Windows Subsystem for Linux (WSL2) (Recommended)**:
+1. **Usando Windows Subsystem for Linux (WSL2) (Recomendado)**:
    ```bash
-   # Install WSL2 and Ubuntu
+   # Instalar WSL2 e Ubuntu
    wsl --install
    
-   # Open Ubuntu terminal and run:
+   # Abrir terminal do Ubuntu e executar:
    sudo apt update
    sudo apt install redis-server
    
-   # Start Redis service
+   # Iniciar serviço Redis
    sudo service redis-server start
    ```
 
-2. **Manual Installation**:
-   - Download Redis from official website: https://github.com/tporadowski/redis/releases
-   - Extract and run `redis-server.exe`
-   - Add to PATH for command-line access
+2. **Instalação Manual**:
+   - Baixar Redis do site oficial: https://github.com/tporadowski/redis/releases
+   - Extrair e executar `redis-server.exe`
+   - Adicionar ao PATH para acesso via linha de comando
 
 ### macOS
 ```bash
 brew update
 brew install redis
 
-# Start Redis service
+# Iniciar serviço Redis
 brew services start redis
 ```
 
@@ -42,213 +52,126 @@ brew services start redis
 sudo apt update
 sudo apt install redis-server
 
-# Start Redis service
+# Iniciar serviço Redis
 sudo systemctl start redis-server
 sudo systemctl enable redis-server
 ```
 
-### Verify Redis Installation
+### Verificar Instalação do Redis
 ```bash
-# Check Redis is running
+# Verificar se Redis está rodando
 redis-cli ping
-# Should return "PONG"
+# Deve retornar "PONG"
 ```
 
-## Package Management
+## Instalação
 
-### pnpm
-
-#### Prerequisites
-- Node.js installed (version 16.14 or later recommended)
-
-#### Install pnpm
+### Clonar o Repositório
 ```bash
-npm install -g pnpm
+git clone https://github.com/seu-usuario/mystic-aac.git
+cd mystic-aac
 ```
 
-#### Project Setup
+### Instalar Dependências
 ```bash
-# Install dependencies
 pnpm install
+# ou
+yarn install
+```
 
-# Run development server
+### Configuração do Ambiente
+1. Copie `.env.example` para `.env`
+2. Preencha as variáveis de ambiente necessárias
+
+### Configurações do Banco de Dados
+```bash
+pnpm prisma generate
+pnpm prisma migrate dev
+```
+
+### Migrações e Utilitários do Prisma
+
+#### Criar ou Atualizar Migrações
+```bash
+# Criar uma nova migração baseada em mudanças no schema
+pnpm prisma migrate dev --name init
+
+# Aplicar migrações em produção
+pnpm prisma migrate deploy
+```
+
+#### Utilitários do Banco de Dados (Opcional)
+```bash
+# Abrir visualizador de banco de dados
+pnpm prisma studio
+
+# Resetar banco de dados (CUIDADO: Apaga todos os dados)
+pnpm prisma migrate reset
+```
+
+#### Comandos Adicionais do Prisma
+```bash
+# Gerar cliente Prisma
+pnpm prisma generate
+
+# Formatar schema do Prisma
+pnpm prisma format
+
+# Validar schema do Prisma
+pnpm prisma validate
+```
+
+#### Resolução de Problemas
+- Verifique se `DATABASE_URL` no `.env` está correto
+- Certifique-se de que o PostgreSQL está rodando
+- Confirme se o usuário do banco de dados tem permissões suficientes
+
+### Executar o Projeto
+```bash
+# Modo de Desenvolvimento
 pnpm dev
+# ou
+yarn dev
 
-# Build project
+# Modo de Produção
 pnpm build
-
-# Run tests
-pnpm test
+pnpm start
+# ou
+yarn build
+yarn start
 ```
 
-#### Common Commands
-```bash
-# Add a dependency
-pnpm add <package-name>
-
-# Add a dev dependency
-pnpm add -D <package-name>
-
-# Remove a dependency
-pnpm remove <package-name>
-
-# Update dependencies
-pnpm update
+## Estrutura do Projeto
 ```
-
-### Why pnpm?
-- Efficient disk space usage
-- Faster than npm and yarn
-- Strict dependency management
-- Supports monorepos
-
-## Database Configuration
-
-### Prisma ORM
-
-#### Prerequisites
-- Node.js installed
-- MySQL configured
-
-#### Install Dependencies
-```bash
-pnpm install
-```
-
-### Database Setup
-
-1. Copy `.env.example` to `.env` and configure your `DATABASE_URL`
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Generate Prisma Client
-   ```bash
-   npx prisma generate
-   ```
-
-3. Create or Update Migrations
-   ```bash
-   # Create a new migration based on schema changes
-   npx prisma migrate dev --name init
-
-   # Apply migrations in production
-   npx prisma migrate deploy
-   ```
-
-4. Database Utilities (Optional)
-   ```bash
-   # Open database viewer
-   npx prisma studio
-
-   # Reset database (CAUTION: Deletes all data)
-   npx prisma migrate reset
-   ```
-
-### Troubleshooting
-- Verify `DATABASE_URL` in `.env` is correct
-- Ensure MySQL is running
-- Confirm database user has sufficient permissions
-
-## Setup
-1. Clone the repository
-2. Run `pnpm install`
-3. Configure `.env` with Redis connection details
-4. Run `pnpm dev` for development
-5. Run `pnpm build` to compile TypeScript
-6. Run `pnpm start` to run the production build
-
-## Environment Configuration
-Create a `.env` file in the root directory with the following variables:
-```
-# Database Connection
-DATABASE_URL=mysql://username:password@localhost:3306/your_database
-
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your_redis_password
-
-# Session Configuration
-SESSION_SECRET=your_long_random_secret_key
-
-# Logging
-LOGGING_LEVEL=info
-
-# Application Settings
-PORT=3000
-```
-
-## Development
-- `pnpm dev`: Start development server
-- `pnpm build`: Compile TypeScript
-- `pnpm lint`: Run ESLint
-- `pnpm test`: Run test suite
-
-## Project Structure
-```
-project-root/
-│
+mystic-aac/
+├── prisma/           # Definições de modelo do banco de dados
+├── public/           # Arquivos estáticos
 ├── src/
-│   ├── config/         # Configuration files
-│   ├── middleware/     # Express middleware
-│   ├── models/         # Database models
-│   ├── routes/         # Express route definitions
-│   ├── services/       # Business logic
-│   ├── types/          # TypeScript type definitions
-│   └── utils/          # Utility functions
-│
-├── views/              # EJS templates
-│   ├── pages/          # Main page templates
-│   └── partials/       # Reusable template components
-│
-├── public/             # Static assets
-│   ├── css/
-│   ├── js/
-│   └── uploads/
-│
-├── tests/              # Test files
-└── prisma/             # Prisma ORM configuration
+│   ├── config/       # Configurações do aplicativo
+│   ├── middleware/   # Middlewares customizados
+│   ├── routes/       # Definições de rotas
+│   ├── services/     # Lógica de negócio e serviços
+│   ├── types/        # Definições de tipos TypeScript
+│   └── utils/        # Utilitários
+├── views/            # Templates EJS
+└── .env              # Configurações de ambiente
 ```
 
-## Technologies
-- Node.js
-- TypeScript
-- Express.js
-- Prisma ORM
-- Redis (Session Management)
-- EJS Templating
-- MySQL Database
-
-## Authentication
-- Supports user registration and login
-- Role-based access control
-- Session management with Redis
-- Password hashing for security
-
-## Security Best Practices
-- Input validation
-- CSRF protection
+## Recursos Principais
+- Autenticação de usuários
+- Gerenciamento de contas
+- Sistema de sessão seguro
+- Integração com banco de dados PostgreSQL
+- Validação de esquema com Zod
 - Rate limiting
-- Secure session management
-- Environment-based configuration
+- Logging detalhado
 
-## Troubleshooting
-- Ensure Redis is running before starting the application
-- Check firewall settings if connection fails
-- Verify Redis port (default: 6379) is not blocked
-- Verify database connection strings
-- Check npm package compatibility
+## Contribuição
+1. Faça um fork do projeto
+2. Crie sua branch de feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
-## Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## Contact
-Discord Community: [Join our Discord Server](https://discord.gg/PcxCdKS)
+## Licença
+Este projeto está licenciado sob a MIT License.

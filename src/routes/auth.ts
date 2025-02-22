@@ -1,265 +1,247 @@
-import express, { Request, Response, NextFunction } from 'express';
-import path from 'path';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { 
   requireAuth, 
   preventAuthenticatedAccess, 
   logUserActivity 
 } from '../middleware/auth-middleware';
 import { 
-  AuthService, 
-  LoginSchema, 
-  RecoverPasswordSchema, 
-  CreateAccountSchema 
+  AuthService 
 } from '../services/auth-service';
-import { RateLimiter } from '../utils/rate-limiter';
 import { renderPage } from '../utils/render-helper';
-import { AppError, asyncHandler } from '../middleware/error-handler';
+import { AppError } from '../middleware/error-handler';
 import prisma from '../services/prisma';
 import logger from '../config/logger';
-
-// Serviços e utilitários importados
+import { User } from '../types/express-session';
+import path from 'path';
+import { ConfigService } from '../services/config.service';
 
 // Constantes
 const ONLINE_PLAYERS_COUNT = 42; // Substituir por valor real/dinâmico
 
-const router = express.Router();
-
-// Middleware para renderização consistente
-const renderPageWithOnlinePlayers = (
-  res: Response, 
+// Renderização consistente
+const renderPageWithOnlinePlayers = async (
+  reply: FastifyReply, 
   page: string, 
   options: { 
     title: string, 
     error?: string, 
-    success?: string
+    success?: string,
+    [key: string]: any  // Permitir propriedades adicionais
   }
 ) => {
-  renderPage(res, page, { 
-    ...options, 
-    onlinePlayers: ONLINE_PLAYERS_COUNT 
-  });
-};
-
-// Rota para exibir a página de login
-router.get('/login', 
-  preventAuthenticatedAccess, 
-  (req: Request, res: Response) => {
-    renderPageWithOnlinePlayers(res, 'login', { 
-      title: 'Login'
+  // Verificações de segurança
+  if (!reply || !page) {
+    logger.error('Parâmetros inválidos para renderização', { 
+      reply: !!reply, 
+      page 
     });
+    return reply.status(500).send('Erro interno: Parâmetros de renderização inválidos');
   }
-);
 
-// Rota para processar o login
-router.post('/login', asyncHandler(async (req: Request, res: Response) => {
+  // Verificar se a resposta já foi enviada
+  if (reply.sent) {
+    logger.warn('Tentativa de renderizar página já enviada', { page });
+    return reply;
+  }
+
   try {
-    const { username, password } = LoginSchema.parse(req.body);
-
-    console.log('Login attempt:', { 
-      username, 
-      sessionId: req.sessionID,
-      nodeEnv: process.env.NODE_ENV
-    });
-
-    if (!RateLimiter.checkLoginAttempts(username)) {
-      const remainingBlockTime = RateLimiter.getRemainingBlockTime(username);
-      return res.status(429).render('pages/login', {
-        title: 'Login',
-        error: `Muitas tentativas de login. Tente novamente em ${remainingBlockTime} minuto(s).`
-      });
-    }
-
-    const sessionUser = await AuthService.validateLogin(username, password);
-    
-    console.log('User validated:', { 
-      userId: sessionUser.id, 
-      username: sessionUser.username,
-      sessionId: req.sessionID,
-      nodeEnv: process.env.NODE_ENV,
-      sessionConfig: JSON.stringify({
-        sessionExists: !!req.session,
-        sessionId: req.sessionID,
-        cookieConfig: req.session?.cookie
-      }, null, 2)
-    });
-
-    // Regenerar sessão de forma síncrona
-    return new Promise<void>((resolve, reject) => {
-      req.session.regenerate((err) => {
-        if (err) {
-          console.error('Erro ao regenerar sessão em produção:', {
-            error: err,
-            nodeEnv: process.env.NODE_ENV
-          });
-          logger.error('Erro ao regenerar sessão:', err);
-          return res.status(500).render('pages/error', {
-            title: 'Erro de Sessão',
-            message: 'Não foi possível iniciar a sessão. Tente novamente.'
-          });
-        }
-
-        // Definir usuário na sessão
-        req.session.user = {
-          id: sessionUser.id,
-          username: sessionUser.username,
-          email: sessionUser.email,
-          role: sessionUser.role,
-          isActive: sessionUser.isActive,
-          lastLogin: sessionUser.lastLogin,
-          createdAt: sessionUser.createdAt,
-          updatedAt: sessionUser.updatedAt
-        };
-
-        console.log('Sessão criada em produção:', {
-          sessionId: req.sessionID,
-          user: JSON.stringify(req.session.user, null, 2),
-          nodeEnv: process.env.NODE_ENV
-        });
-
-        // Atualizar último login
-        AuthService.updateLastLogin(sessionUser.id)
-          .then(() => {
-            res.redirect('/dashboard');
-            resolve();
-          })
-          .catch((updateError) => {
-            console.error('Erro ao atualizar último login em produção:', {
-              error: updateError,
-              nodeEnv: process.env.NODE_ENV
-            });
-            logger.error('Erro ao atualizar último login:', updateError);
-            res.redirect('/dashboard');
-            resolve();
-          });
-      });
+    // Renderizar página com contagem de jogadores online
+    return renderPage(reply, page, { 
+      ...options, 
+      onlinePlayers: ONLINE_PLAYERS_COUNT 
     });
   } catch (error) {
-    console.error('Erro no processo de login em produção:', {
-      error,
-      nodeEnv: process.env.NODE_ENV
+    // Log de erro detalhado
+    logger.error('Erro ao renderizar página com jogadores online', {
+      page,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
+      stack: error instanceof Error ? error.stack : 'Sem stack trace'
     });
 
-    logger.error('Erro no processo de login:', error);
-
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).render('pages/login', {
-        title: 'Erro de Login',
-        error: error.message
-      });
+    // Garantir que apenas uma resposta seja enviada
+    if (!reply.sent) {
+      return reply.status(500).send('Erro interno ao renderizar página');
     }
 
-    // Erro genérico
-    return res.status(500).render('pages/error', {
-      title: 'Erro de Login',
-      message: 'Ocorreu um erro inesperado. Tente novamente.'
-    });
+    return reply;
   }
-}));
+};
 
-// Rota para recuperação de senha
-router.get('/recover', (req: Request, res: Response) => {
-  renderPageWithOnlinePlayers(res, 'password-recover', { 
-    title: 'Recuperar Senha'
-  });
-});
+// Função auxiliar para obter usuário da sessão
+const getSessionUser = (request: FastifyRequest): User | undefined => 
+  request.session && typeof request.session === 'object' 
+    ? (request.session as any).user 
+    : undefined;
 
-router.post('/recover', asyncHandler(async (req: Request, res: Response) => {
-  const { email, username } = RecoverPasswordSchema.parse(req.body);
-  
-  await AuthService.recoverPassword(email, username);
+// Plugin de rotas de autenticação
+export default async function authRoutes(fastify: FastifyInstance) {
+  // Inicializar ConfigService
+  const configService = new ConfigService();
 
-  renderPageWithOnlinePlayers(res, 'password-recover', { 
-    title: 'Recuperar Senha', 
-    success: 'Instruções de recuperação enviadas para seu e-mail.'
-  });
-}));
-
-// Rota para criar conta
-router.get('/create', (req: Request, res: Response) => {
-  renderPageWithOnlinePlayers(res, 'account-create', { 
-    title: 'Criar Conta'
-  });
-});
-
-router.post('/create', asyncHandler(async (req: Request, res: Response) => {
-  const accountData = CreateAccountSchema.parse(req.body);
-  
-  await AuthService.createAccount(accountData);
-
-  renderPageWithOnlinePlayers(res, 'account-create', { 
-    title: 'Criar Conta', 
-    success: 'Conta criada com sucesso! Faça login para continuar.'
-  });
-}));
-
-// Rota para o dashboard (protegida)
-router.get('/dashboard', 
-  requireAuth, 
-  logUserActivity, 
-  asyncHandler(async (req: Request, res: Response) => {
-    // Verificação de segurança para req.session.user
-    if (!req.session.user || !req.session.user.username) {
-      throw new AppError('Você precisa fazer login para acessar esta página.', 401);
+  // Rota de index
+  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      return reply.view('pages/index', { 
+        title: 'Bem-vindo',
+        serverName: configService.getServerName(), 
+        onlinePlayers: ONLINE_PLAYERS_COUNT
+      });
+    } catch (error) {
+      logger.error('Erro ao renderizar página inicial', {
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : 'Sem stack trace'
+      });
+      return reply.status(500).send('Erro interno ao renderizar página inicial');
     }
+  });
 
-    // Buscar dados do usuário e jogador
-    const account = await prisma.account.findUnique({
-      where: { username: req.session.user.username },
-      include: { 
-        Player: {
+  // Rota de registro
+  fastify.post('/register', 
+    { 
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            username: { 
+              type: 'string', 
+              minLength: 3, 
+              maxLength: 50,
+              pattern: '^[a-zA-Z0-9_]+$'
+            },
+            email: { type: 'string', format: 'email' },
+            password: { 
+              type: 'string', 
+              minLength: 8, 
+              maxLength: 100,
+              pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$'
+            },
+            confirmPassword: { type: 'string' }
+          },
+          required: ['username', 'email', 'password', 'confirmPassword']
+        }
+      },
+      preHandler: [
+        preventAuthenticatedAccess
+      ]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const accountData = request.body as { 
+          username: string; 
+          email: string; 
+          password: string; 
+          confirmPassword: string 
+        };
+        
+        await AuthService.createAccount(accountData);
+
+        return renderPageWithOnlinePlayers(reply, 'register', { 
+          title: 'Registro', 
+          success: 'Conta criada com sucesso! Faça login.' 
+        });
+      } catch (error) {
+        logger.error('Erro no registro:', error);
+        return renderPageWithOnlinePlayers(reply, 'register', { 
+          title: 'Registro', 
+          error: error instanceof Error ? error.message : 'Erro interno no servidor'
+        });
+      }
+    }
+  );
+
+  // Rota de recuperação de senha
+  fastify.post('/recover-password', 
+    { 
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            email: { type: 'string', format: 'email' },
+            username: { type: 'string', minLength: 3 }
+          },
+          required: ['email', 'username']
+        }
+      },
+      preHandler: [
+        preventAuthenticatedAccess
+      ]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { email, username } = request.body as { email: string, username: string };
+        const result = await AuthService.recoverPassword(email, username);
+
+        return renderPageWithOnlinePlayers(reply, 'recover-password', { 
+          title: 'Recuperar Senha', 
+          success: 'Instruções de recuperação enviadas para seu e-mail.' 
+        });
+      } catch (error) {
+        logger.error('Erro na recuperação de senha:', error);
+        return renderPageWithOnlinePlayers(reply, 'recover-password', { 
+          title: 'Recuperar Senha', 
+          error: error instanceof Error ? error.message : 'Erro interno no servidor'
+        });
+      }
+    }
+  );
+
+  // Rota de dashboard
+  fastify.get('/dashboard', 
+    { 
+      preHandler: [
+        requireAuth, 
+        logUserActivity
+      ]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = getSessionUser(request);
+        const player = await prisma.player.findUnique({
+          where: {
+            accountId: user?.id
+          },
           select: {
             id: true,
             name: true,
             level: true,
-            vocation: true,
-            experience: true,
-            avatar: true
+            experience: true
           }
-        }
+        });
+
+        return renderPageWithOnlinePlayers(reply, 'dashboard', {
+          title: 'Dashboard',
+          user: user,
+          player: player
+        });
+      } catch (error) {
+        logger.error('Erro ao buscar informações do jogador:', error);
+        return renderPageWithOnlinePlayers(reply, 'error', {
+          title: 'Erro',
+          error: 'Não foi possível carregar as informações do jogador'
+        });
       }
-    });
-
-    if (!account) {
-      throw new AppError('Não foi possível encontrar sua conta. Por favor, faça login novamente.', 404);
     }
+  );
 
-    // Buscar notícias recentes
-    const news = await prisma.news.findMany({
-      orderBy: { date: 'desc' },
-      take: 5
-    });
+  // Rota de logout usando route
+  fastify.route({
+    method: 'GET',
+    url: '/logout',
+    preHandler: [requireAuth],
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        // Destruir sessão
+        await request.session.destroy();
 
-    res.render('pages/dashboard', {
-      title: 'Painel do Jogador',
-      user: req.session.user,
-      player: account.Player || null,
-      news: news || [],
-      onlinePlayers: ONLINE_PLAYERS_COUNT
-    });
-  })
-);
-
-// Rota para logout
-router.get('/logout', (req: Request, res: Response) => {
-  // Registrar logout
-  const username = req.session.user?.username || 'Usuário Desconhecido';
-  
-  // Destruir sessão de forma segura
-  req.session.destroy((err) => {
-    if (err) {
-      logger.error(`Erro ao fazer logout para ${username}:`, err);
-      return res.status(500).redirect('/');
+        logger.info('Usuário deslogado');
+        return reply.redirect('/account/login');
+      } catch (error) {
+        logger.error('Erro no logout:', error);
+        return renderPageWithOnlinePlayers(reply, 'error', {
+          title: 'Erro de Logout',
+          error: 'Erro interno durante o logout'
+        });
+      }
     }
-
-    // Limpar cookie de sessão
-    res.clearCookie('connect.sid');
-    
-    // Log de logout
-    logger.info(`Logout bem-sucedido para ${username}`);
-    
-    // Redirecionar para página inicial
-    res.redirect('/');
   });
-});
-
-export default router;
+}
