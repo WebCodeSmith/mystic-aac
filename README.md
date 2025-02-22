@@ -13,7 +13,7 @@ Mystic AAC é uma plataforma de gerenciamento de servidores Open Tibia, desenvol
 
 ## Pré-requisitos
 - Node.js (v18+)
-- pnpm ou yarn
+- pnpm
 - Redis
 - PostgreSQL
 
@@ -75,8 +75,6 @@ cd mystic-aac
 ### Instalar Dependências
 ```bash
 pnpm install
-# ou
-yarn install
 ```
 
 ### Configuração do Ambiente
@@ -130,15 +128,10 @@ pnpm prisma validate
 ```bash
 # Modo de Desenvolvimento
 pnpm dev
-# ou
-yarn dev
 
 # Modo de Produção
 pnpm build
 pnpm start
-# ou
-yarn build
-yarn start
 ```
 
 ## Estrutura do Projeto
