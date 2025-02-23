@@ -1,20 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { 
   requireAuth, 
-  preventAuthenticatedAccess, 
   logUserActivity
 } from '../middleware/auth-middleware';
-import { 
-  AuthService 
-} from '../services/auth-service';
 import { renderPage } from '../utils/render-helper';
-import { AppError } from '../middleware/error-handler';
 import prisma from '../services/prisma';
 import logger from '../config/logger';
-import { User } from '../types/fastify-session';
-import path from 'path';
+import { getSessionUser } from '../types/fastify-custom';
 import { ConfigService } from '../services/config.service';
-import { RateLimiter } from '../utils/rate-limiter'; // Importação correta
 
 // Constantes
 const ONLINE_PLAYERS_COUNT = 42; // Substituir por valor real/dinâmico
@@ -68,12 +61,6 @@ const renderPageWithOnlinePlayers = async (
   }
 };
 
-// Função auxiliar para obter usuário da sessão
-const getSessionUser = (request: FastifyRequest): User | undefined => 
-  request.session && typeof request.session === 'object' 
-    ? (request.session as any).user 
-    : undefined;
-
 // Plugin de rotas de autenticação
 export default async function authRoutes(fastify: FastifyInstance) {
   // Inicializar ConfigService
@@ -82,10 +69,34 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Rota de index
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const news = await prisma.news.findMany({
+        orderBy: { date: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          date: true,
+          author: {
+            select: {
+              id: true,
+              username: true
+            }
+          }
+        }
+      });
+
       return reply.view('pages/index', { 
         title: 'Bem-vindo',
         serverName: configService.getServerName(), 
-        onlinePlayers: ONLINE_PLAYERS_COUNT
+        onlinePlayers: ONLINE_PLAYERS_COUNT,
+        news: news.map(newsItem => {
+          console.log(newsItem);
+          return {
+            ...newsItem,
+            authorName: newsItem.author ? newsItem.author.username : 'Autor desconhecido'
+          }
+        }) // Passar as notícias para a view
       });
     } catch (error) {
       logger.error('Erro ao renderizar página inicial', {
@@ -99,37 +110,58 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Rota de dashboard
   fastify.get('/dashboard', 
     { 
-      preHandler: [
-        requireAuth, 
-        logUserActivity
-      ]
-    },
+      preHandler: [requireAuth] 
+    }, 
     async (request: FastifyRequest, reply: FastifyReply) => {
-      console.log('Acessando a rota do dashboard'); // Log adicionado
       try {
-        const user = getSessionUser(request);
-        const player = await prisma.player.findUnique({
-          where: {
-            accountId: user?.id
-          },
+        // Garantir que o usuário existe na sessão
+        if (!request.session?.user?.id) {
+          return reply.redirect('/login');
+        }
+
+        const user = request.session.user;
+
+        // Buscar o jogador
+        const player = await prisma.player.findFirst({
+          where: { accountId: user.id }
+        });
+
+        // Buscar as notícias
+        const news = await prisma.news.findMany({
+          orderBy: { date: 'desc' },
+          take: 5,
           select: {
             id: true,
-            name: true,
-            level: true,
-            experience: true
+            title: true,
+            summary: true,
+            date: true,
+            author: {
+              select: {
+                id: true,
+                username: true
+              }
+            }
           }
         });
 
-        return renderPage(reply, 'dashboard', {
-          title: 'Dashboard',
-          user: user,
-          player: player
+        return reply.view('pages/dashboard', {
+          title: 'Painel do Jogador',
+          user,
+          player,
+          news
         });
       } catch (error) {
-        logger.error('Erro ao buscar informações do jogador:', error);
-        return renderPage(reply, 'error', {
-          title: 'Erro',
-
+        // Verificar se o erro é uma instância de Error
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        logger.error('Erro ao acessar o dashboard', {
+          error: errorMessage,
+          stack: error instanceof Error ? error.stack : 'Sem stack trace'
+        });
+        
+        // Renderizar a página de erro
+        return reply.view('pages/error', { 
+          title: 'Erro', 
+          message: errorMessage || 'Ocorreu um erro inesperado.' 
         });
       }
     }

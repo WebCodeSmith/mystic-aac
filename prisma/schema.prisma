@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root@localhost:3306/tibia_server"
+}
+
+model account {
+  id            Int             @id @default(autoincrement())
+  username      String          @unique(map: "Account_username_key")
+  email         String          @unique(map: "Account_email_key")
+  password      String
+  role          String          @default("player")
+  isActive      Boolean         @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  passwordreset passwordreset[]
+  player        player?
+  news          news[]          @relation("AuthorNews") // Adicione este campo
+}
+
+model character {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique(map: "Character_name_key")
+  level     Int
+  vocation  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model news {
+  id        Int       @id @default(autoincrement())
+  title     String
+  summary   String
+  content   String    @db.Text
+  date      DateTime
+  image     String?   @db.Text
+  authorId  Int? // Adicione este campo
+  author    account?  @relation("AuthorNews", fields: [authorId], references: [id]) // Relacionamento com o modelo account
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+}
+
+model passwordreset {
+  id        Int      @id @default(autoincrement())
+  accountId Int
+  token     String   @unique(map: "PasswordReset_token_key")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+  account   account  @relation(fields: [accountId], references: [id], map: "PasswordReset_accountId_fkey")
+
+  @@index([accountId], map: "PasswordReset_accountId_fkey")
+  @@index([token], map: "PasswordReset_token_idx")
+}
+
+model player {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique(map: "Player_name_key")
+  level      Int
+  vocation   String
+  experience BigInt
+  avatar     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  accountId  Int?     @unique(map: "Player_accountId_key")
+  account    account? @relation(fields: [accountId], references: [id], map: "Player_accountId_fkey")
+}

@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as bcrypt from 'bcrypt';
 import prisma from '../services/prisma';
 import { User } from '../types/fastify-session';
+import { getSessionUser } from '../types/fastify-custom';
 import { requireAuth, preventAuthenticatedAccess } from '../middleware/auth-middleware';
 import logger from '../config/logger';
 import Joi from 'joi';
@@ -124,32 +125,14 @@ export default async function accountRoutes(fastify: FastifyInstance) {
             role: 'USER', // Papel padrão
             isActive: true,
             lastLogin: new Date(),
-            Player: {
-              create: {
-                name: username,
-                level: 1,
-                experience: 0,
-                vocation: 'Rookie', // Valor padrão para vocation
-              },
-            },
+            updatedAt: new Date(), // Adicionado para evitar erro
           },
           include: {
-            Player: true
           }
         });
 
-        // Converter BigInt para Number ou String antes de enviar a resposta
-        const responseAccount = {
-          ...newAccount,
-          Player: newAccount.Player ? {
-            ...newAccount.Player,
-            level: Number(newAccount.Player.level),
-            experience: Number(newAccount.Player.experience),
-          } : null,
-        };
-
         logger.info(`Nova conta criada: ${username}`);
-        return sendResponse(reply, 201, 'Conta criada com sucesso', responseAccount);
+        return sendResponse(reply, 201, 'Conta criada com sucesso', newAccount);
 
       } catch (error) {
         logger.error('Erro na criação de conta:', error);
@@ -368,10 +351,4 @@ export default async function accountRoutes(fastify: FastifyInstance) {
       }
     }
   );
-}
-
-function getSessionUser(request: FastifyRequest): User | undefined {
-  return request.session && typeof request.session === 'object' 
-    ? (request.session as any).user 
-    : undefined;
 }

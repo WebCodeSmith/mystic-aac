@@ -62,7 +62,7 @@
                     </div>
                     <p class="news-summary"><%= newsItem.summary %></p>
                     <div class="news-footer">
-                        <span class="news-author">Por <%= newsItem.author.username %></span>
+                        <span class="news-author">Por <%= newsItem.author ? newsItem.author.username : 'Autor Desconhecido' %></span>
                         <a href="/news/<%= newsItem.id %>" class="read-more">Leia mais</a>
                     </div>
                 </div>

@@ -3,6 +3,7 @@ import prisma from '../services/prisma';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth-middleware';
 import logger from '../config/logger';
+import type { news, Prisma } from '@prisma/client';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -103,6 +104,30 @@ export default async function newsRoutes(fastify: FastifyInstance) {
   });
 
   // Rota para criar notícia
+  fastify.get('/create', { 
+    preHandler: [requireAuth] 
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Verificar se o usuário existe e é admin
+      if (!request.session?.user?.role || request.session.user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Acesso não autorizado' });
+      }
+
+      return reply.view('pages/news-create', { 
+        title: 'Criar Notícia',
+        user: request.user,
+        isEditing: false,
+        newsItem: null
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ 
+        error: 'Erro ao carregar página de criação de notícia', 
+        message: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+    }
+  });
+
   fastify.post<{
     Body: NewsBody
   }>('/create', { 
@@ -110,17 +135,22 @@ export default async function newsRoutes(fastify: FastifyInstance) {
     schema: {
       body: {
         type: 'object',
-        required: ['title', 'summary', 'content'],
+        required: ['title', 'content'],
         properties: {
-          title: { type: 'string', minLength: 3 },
-          summary: { type: 'string', minLength: 10 },
-          content: { type: 'string', minLength: 20 },
+          title: { type: 'string', minLength: 1 },
+          content: { type: 'string', minLength: 1 },
+          summary: { type: 'string' },
           date: { type: 'string', format: 'date-time' }
         }
       }
     }
   }, async (request, reply) => {
     try {
+      // Verificar se o usuário existe e é admin
+      if (!request.session?.user?.role || request.session.user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Acesso não autorizado' });
+      }
+
       const result = NewsCreateSchema.safeParse(request.body);
       
       if (!result.success) {
@@ -132,13 +162,17 @@ export default async function newsRoutes(fastify: FastifyInstance) {
 
       const { title, summary, content, date } = result.data;
       
+      const newsData = {
+        title,
+        summary,
+        content,
+        date: date ? new Date(date) : new Date(),
+        updatedAt: new Date(),
+        authorId: request.session.user.id
+      } satisfies Prisma.newsUncheckedCreateInput;
+
       const news = await prisma.news.create({
-        data: {
-          title,
-          summary,
-          content,
-          date: date ? new Date(date) : new Date()
-        }
+        data: newsData
       });
 
       return reply.redirect('/dashboard');
@@ -146,26 +180,6 @@ export default async function newsRoutes(fastify: FastifyInstance) {
       request.log.error(error);
       return reply.status(500).send({ 
         error: 'Erro ao criar notícia', 
-        message: error instanceof Error ? error.message : 'Erro desconhecido' 
-      });
-    }
-  });
-
-  // Rota para renderizar página de criação de notícias
-  fastify.get('/create', { 
-    preHandler: [requireAuth] 
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      return reply.view('pages/news-create', { 
-        title: 'Criar Notícia',
-        user: request.user,
-        isEditing: false,
-        newsItem: null
-      });
-    } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ 
-        error: 'Erro ao carregar página de criação de notícia', 
         message: error instanceof Error ? error.message : 'Erro desconhecido' 
       });
     }

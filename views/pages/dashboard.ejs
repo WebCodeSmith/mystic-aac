@@ -90,35 +90,40 @@
         <div class="dashboard-card news-section">
             <div class="dashboard-card-header">
                 <h2>Últimas Notícias</h2>
-                <div class="dashboard-card-actions">
-                    <a href="/news/create" class="btn btn-primary mr-2 no-underline">
-                        <i class="fas fa-plus"></i> Criar Notícia
-                    </a>
-                </div>
+                <% if (user.role === 'ADMIN') { %>
+                    <div class="dashboard-card-actions">
+                        <a href="/news/create" class="btn btn-primary mr-2 no-underline">
+                            <i class="fas fa-plus"></i> Criar Notícia
+                        </a>
+                    </div>
+                <% } %>
             </div>
             <div id="newsList">
                 <% if (locals.news && news.length > 0) { %>
                     <% news.forEach(function(newsItem) { %>
                         <div class="news-item">
-                            <div class="news-item-header">
-                                <h3><%= newsItem.title %></h3>
-                                <div class="news-item-actions">
-                                    <a href="/news/edit/<%= newsItem.id %>" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit"></i> Editar
-                                    </a>
-                                    <button class="btn btn-sm btn-danger delete-news-btn" data-news-id="<%= newsItem.id %>">
-                                        <i class="fas fa-trash"></i> Excluir
-                                    </button>
-                                </div>
+                            <div class="news-header">
+                                <h3 class="news-title"><%= newsItem.title %></h3>
+                                <% if (user.role === 'ADMIN') { %>
+                                    <div class="news-actions">
+                                        <a href="/news/edit/<%= newsItem.id %>" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                        <button class="btn btn-sm btn-danger delete-news" data-news-id="<%= newsItem.id %>">
+                                            <i class="fas fa-trash"></i> Excluir
+                                        </button>
+                                    </div>
+                                <% } %>
                             </div>
-                            <p><%= newsItem.summary %></p>
-                            <small class="news-date">
-                                <i class="fas fa-calendar-alt"></i> <%= new Date(newsItem.date).toLocaleString() %>
-                            </small>
+                            <p class="news-summary"><%= newsItem.summary %></p>
+                            <div class="news-footer">
+                                <span class="news-author">Por <%= newsItem.author ? newsItem.author.username : 'Autor Desconhecido' %></span>
+                                <a href="/news/<%= newsItem.id %>" class="read-more">Leia mais</a>
+                            </div>
                         </div>
                     <% }); %>
                 <% } else { %>
-                    <p>Nenhuma notícia disponível no momento.</p>
+                    <p class="no-news">Nenhuma notícia disponível no momento.</p>
                 <% } %>
             </div>
         </div>
@@ -139,42 +144,74 @@
 </div>
 <%- include('../partials/footer') %>
 
+<style>
+.news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.news-title {
+    margin: 0;
+}
+
+.news-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 15px;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const newsList = document.getElementById('newsList');
-    
-    newsList.addEventListener('click', async (event) => {
-        const deleteButton = event.target.closest('.delete-news-btn');
-        
-        if (deleteButton) {
-            const newsId = deleteButton.dataset.newsId;
-            
-            const confirmDelete = confirm('Tem certeza que deseja excluir esta notícia?');
-            
-            if (confirmDelete) {
+    // Função para deletar notícia
+    const deleteButtons = document.querySelectorAll('.delete-news');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            if (confirm('Tem certeza que deseja excluir esta notícia?')) {
+                const newsId = e.currentTarget.dataset.newsId;
+                const newsItem = e.currentTarget.closest('.news-item');
+                
                 try {
-                    const response = await fetch(`/news/delete/${newsId}`, { 
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                    // Adicionar classe de fade out antes de fazer a requisição
+                    newsItem.style.transition = 'opacity 0.3s ease';
+                    newsItem.style.opacity = '0.5';
+                    
+                    const response = await fetch(`/news/${newsId}`, {
+                        method: 'DELETE',
                     });
                     
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        const newsItem = deleteButton.closest('.news-item');
-                        newsItem.remove();
-                        alert('Notícia excluída com sucesso!');
+                    if (response.ok) {
+                        // Animação suave de remoção
+                        newsItem.style.transition = 'all 0.3s ease';
+                        newsItem.style.opacity = '0';
+                        newsItem.style.maxHeight = '0';
+                        newsItem.style.margin = '0';
+                        newsItem.style.padding = '0';
+                        
+                        // Remover o elemento após a animação
+                        setTimeout(() => {
+                            newsItem.remove();
+                            
+                            // Verificar se ainda existem notícias
+                            const newsList = document.getElementById('newsList');
+                            if (!newsList.querySelector('.news-item')) {
+                                newsList.innerHTML = '<p class="no-news">Nenhuma notícia disponível no momento.</p>';
+                            }
+                        }, 300);
                     } else {
-                        alert(result.message || 'Erro ao excluir notícia. Tente novamente.');
+                        // Restaurar opacidade em caso de erro
+                        newsItem.style.opacity = '1';
+                        alert('Erro ao excluir a notícia');
                     }
                 } catch (error) {
+                    // Restaurar opacidade em caso de erro
+                    newsItem.style.opacity = '1';
                     console.error('Erro:', error);
-                    alert('Erro ao excluir notícia. Verifique sua conexão.');
+                    alert('Erro ao excluir a notícia');
                 }
             }
-        }
+        });
     });
 });
 </script>

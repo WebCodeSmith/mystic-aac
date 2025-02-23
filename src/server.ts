@@ -17,17 +17,12 @@ import { PrismaClient } from '@prisma/client';
 import { ResourceManager } from './utils/server-helpers';
 import { ConfigService } from './services/config.service';
 import { createRedisSessionStore } from './utils/redis-session-store';
-import { apiLimiter, loginLimiter } from './utils/rate-limiter';
+import { apiLimiter } from './utils/rate-limiter';
 import { globalLogger } from './middleware/global-logger';
 import newsRoutes from './routes/news';
 import authRoutes from './routes/auth';
 import accountRoutes from './routes/account';
-
-function getSessionUser(request: FastifyRequest): any | undefined {
-    return request.session && typeof request.session === 'object' 
-        ? (request.session as any).user 
-        : undefined;
-}
+import { getSessionUser } from './types/fastify-custom';
 
 export class Server {
   private readonly app: FastifyInstance;
