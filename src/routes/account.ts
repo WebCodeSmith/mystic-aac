@@ -215,7 +215,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user: User | undefined = getSessionUser(request);
+        const user = getSessionUser(request);
 
         if (!user) {
           return reply.status(401).redirect('/login');
@@ -258,7 +258,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const user: User | undefined = getSessionUser(request);
+        const user = getSessionUser(request);
 
         if (!user) {
           return reply.status(401).redirect('/login');
@@ -275,7 +275,12 @@ export default async function accountRoutes(fastify: FastifyInstance) {
             email,
             player: {
               update: {
-                name
+                where: {
+                  id: user.id
+                },
+                data: {
+                  name: name
+                }
               }
             }
           },
@@ -285,7 +290,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
         });
 
         // Atualizar usuário na sessão
-        const updatedSessionUser: User = {
+        const updatedSessionUser = {
           ...user,
           email: updatedAccount.email || user.email,
           updatedAt: new Date()

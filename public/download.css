@@ -20,19 +20,16 @@
 }
 
 .download-card {
-    background-color: #444; /* Fundo do card */
-    color: white;
-    border: 1px solid #ddd;
+    background: rgba(92, 64, 51, 0.9);
+    padding: 2rem;
     border-radius: 8px;
-    padding: 20px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin: 10px;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease;
+    color: #e0c9a6;
 }
 
 .download-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-5px);
 }
 
 .download-card h2 {
@@ -40,9 +37,13 @@
 }
 
 .download-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 3rem;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .download-link {
@@ -67,4 +68,84 @@
     padding: 15px;
     margin-top: 20px;
     text-align: center;
+}
+
+.download-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.download-header h1 {
+    font-size: 2.5rem;
+    color: #e0c9a6;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto 3rem auto;
+}
+
+.download-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #e0c9a6;
+}
+
+.download-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    margin-top: 1rem;
+    background: #333;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.download-button:hover {
+    background: #5c4033;
+}
+
+.system-requirements {
+    background: rgba(92, 64, 51, 0.9);
+    padding: 2rem;
+    border-radius: 8px;
+    color: #e0c9a6;
+}
+
+.system-requirements h3 {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.system-requirements ul {
+    list-style: none;
+    padding: 0;
+}
+
+.system-requirements li {
+    padding: 0.5rem 0;
+    text-align: center;
+}
+
+.content-wrapper {
+    min-height: 100vh;
+    background: url('/images/background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .download-container {
+        padding: 1rem;
+    }
 }

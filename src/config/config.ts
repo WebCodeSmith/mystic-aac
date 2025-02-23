@@ -33,6 +33,24 @@ export enum Vocation {
     Knight = 4
 }
 
+// Helper function for vocation names
+export function getVocationName(vocationId: number): string {
+    switch (vocationId) {
+        case Vocation.Rookie:
+            return 'Rookie';
+        case Vocation.Druid:
+            return 'Druid';
+        case Vocation.Sorcerer:
+            return 'Sorcerer';
+        case Vocation.Paladin:
+            return 'Paladin';
+        case Vocation.Knight:
+            return 'Knight';
+        default:
+            return 'Unknown';
+    }
+}
+
 export const defaultCharacterData: CharacterData = {
     level: GAME_CONSTANTS.INITIAL_LEVEL,
     experience: GAME_CONSTANTS.INITIAL_EXPERIENCE,

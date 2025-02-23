@@ -73,7 +73,7 @@
                 <h3>Informações do Personagem</h3>
                 <p>Nome: <%= player.name %></p>
                 <p>Nível: <%= player.level %></p>
-                <p>Vocação: <%= player.vocation %></p>
+                <p>Vocação: <%= getVocationName(player.vocation) %></p>
                 <p>Experiência: <%= player.experience.toLocaleString() %></p>
             </div>
             <% } %>

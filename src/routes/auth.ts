@@ -7,7 +7,7 @@ import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
 import { ConfigService } from '../services/config.service';
 import { renderPage } from '../utils/render-helper';
-import downloadRoutes from './download';
+import { Vocation, getVocationName } from '../config/config';  // Adicione esta importação no topo
 
 // Interface para notícia
 interface NewsItem {
@@ -194,6 +194,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           player,
           players,
           news,
+          getVocationName,  // Agora importada do config.ts
           serverName: configService.get('serverName') || 'Mystic AAC'
         });
       } catch (error) {
@@ -224,6 +225,19 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Registrando as rotas de download
-  fastify.register(downloadRoutes);
+  // Download route
+  fastify.get('/download', {
+    preHandler: [requireAuth]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+        const user = await getSessionUser(request);
+        return renderPageWithOnlinePlayers(reply, 'download', {  // Removed 'pages/'
+            title: 'Download Game',
+            user
+        });
+    } catch (error) {
+        logger.error('Error accessing download page:', error);
+        return reply.status(500).send('Error loading download page');
+    }
+  });
 }

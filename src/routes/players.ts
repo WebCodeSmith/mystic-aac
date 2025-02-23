@@ -30,7 +30,7 @@ export default async function playerRoutes(fastify: FastifyInstance) {
     const skip = (page - 1) * limit;
 
     const whereCondition = {
-      ...(vocation && { vocation }),
+      ...(vocation && { vocation: Number(vocation) }),
       ...(minLevel && { level: { gte: minLevel } })
     };
 
@@ -130,7 +130,7 @@ export default async function playerRoutes(fastify: FastifyInstance) {
         data: {
           ...(name && { name }),
           ...(avatar && { avatar }),
-          ...(vocation && { vocation })
+          ...(vocation && { vocation: Number(vocation) })
         },
         select: {
           id: true,
