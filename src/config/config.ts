@@ -1,5 +1,15 @@
 // Configuration file for default character settings in the game
 
+// Game constants for better maintainability
+export const GAME_CONSTANTS = {
+    INITIAL_LEVEL: 8,
+    INITIAL_EXPERIENCE: 4200,
+    INITIAL_HEALTH: 185,
+    INITIAL_MANA: 35,
+    DEFAULT_TOWN: 1,
+    DEFAULT_WORLD: 1
+} as const;
+
 // Define types for better type-safety
 export interface CharacterData {
     level: number;
@@ -10,22 +20,9 @@ export interface CharacterData {
     manamax: number;
     town_id: number;
     world: number;
-    vocation: number;
+    vocation: Vocation;
     updatedAt: Date;
 }
-
-export const defaultCharacterData: CharacterData = {
-    level: 8,
-    experience: 4200,
-    health: 185,
-    healthmax: 185,
-    mana: 35,
-    manamax: 35,
-    town_id: 1,
-    world: 1,
-    vocation: 0,  // Default vocation (Rookie)
-    updatedAt: new Date()
-};
 
 // Enum for vocations
 export enum Vocation {
@@ -36,6 +33,19 @@ export enum Vocation {
     Knight = 4
 }
 
+export const defaultCharacterData: CharacterData = {
+    level: GAME_CONSTANTS.INITIAL_LEVEL,
+    experience: GAME_CONSTANTS.INITIAL_EXPERIENCE,
+    health: GAME_CONSTANTS.INITIAL_HEALTH,
+    healthmax: GAME_CONSTANTS.INITIAL_HEALTH,
+    mana: GAME_CONSTANTS.INITIAL_MANA,
+    manamax: GAME_CONSTANTS.INITIAL_MANA,
+    town_id: GAME_CONSTANTS.DEFAULT_TOWN,
+    world: GAME_CONSTANTS.DEFAULT_WORLD,
+    vocation: Vocation.Rookie,
+    updatedAt: new Date()
+};
+
 // Updated vocation mapping
 export const vocationMap: Record<string, Vocation> = {
     Rookie: Vocation.Rookie,
@@ -43,4 +53,9 @@ export const vocationMap: Record<string, Vocation> = {
     Sorcerer: Vocation.Sorcerer,
     Paladin: Vocation.Paladin,
     Knight: Vocation.Knight
+};
+
+// Helper function to validate vocation
+export const isValidVocation = (vocation: number): vocation is Vocation => {
+    return Object.values(Vocation).includes(vocation);
 };
