@@ -1,18 +1,25 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import prisma from '../services/prisma';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth-middleware';
 import logger from '../config/logger';
 import { getSessionUser } from '../types/fastify-custom';
-import { defaultCharacterData } from '../config/config'; // Ajustando o caminho para o arquivo de configuração
+import { defaultCharacterData, Vocation, vocationMap } from '../config/config'; // Ajustando o caminho para o arquivo de configuração
 
-// Schema para validação dos dados do personagem
+const prisma = new PrismaClient();
+
+// Atualizar a função de validação
+const validateVocation = (vocation: number): boolean => {
+  return vocation >= 0 && vocation <= 4;  // Validar range de vocações
+};
+
+// Atualizar o schema de validação
 const characterCreateSchema = z.object({
   name: z.string()
     .min(3, 'O nome deve ter pelo menos 3 caracteres')
     .max(20, 'O nome deve ter no máximo 20 caracteres')
     .regex(/^[a-zA-Z ]+$/, 'O nome deve conter apenas letras'),
-  vocation: z.enum(['Knight', 'Paladin', 'Sorcerer', 'Druid']),
+  vocation: z.enum(['0', '1', '2', '3', '4']),  // Incluir '0' para Rookie
   sex: z.enum(['male', 'female']),
   world: z.string()
 });
@@ -59,6 +66,13 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         });
       }
 
+      logger.warn('Valor da vocação antes da validação:', result.data.vocation);
+
+      const vocationNumber = parseInt(result.data.vocation);
+      if (!validateVocation(vocationNumber)) {
+        return reply.status(400).send({ error: 'Vocação inválida' });
+      }
+
       // Verificar se já existe um personagem com este nome
       const existingCharacter = await prisma.player.findFirst({
         where: { name: result.data.name }
@@ -70,15 +84,15 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Criar o personagem usando as configurações padrão
+      // Modificar a criação do personagem
       const character = await prisma.player.create({
         data: {
+          ...defaultCharacterData,    // Primeiro as configurações padrão
           name: result.data.name,
-          vocation: result.data.vocation,
           sex: result.data.sex,
           accountId: user.id,
           looktype: result.data.sex === 'male' ? 128 : 136,
-          ...defaultCharacterData
+          vocation: vocationNumber    // Sobrescreve a vocação padrão com a selecionada
         }
       });
 

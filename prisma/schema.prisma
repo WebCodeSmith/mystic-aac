@@ -27,7 +27,7 @@ model character {
   id        Int      @id @default(autoincrement())
   name      String   @unique(map: "Character_name_key")
   level     Int
-  vocation  String
+  vocation  Int
   createdAt DateTime @default(now())
   updatedAt DateTime
   accountId  Int
@@ -65,7 +65,7 @@ model player {
   id         Int      @id @default(autoincrement())
   name       String   @unique(map: "Player_name_key")
   level      Int
-  vocation   String
+  vocation   Int
   sex        String
   experience BigInt
   health     Int      @default(150)
