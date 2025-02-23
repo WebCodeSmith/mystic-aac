@@ -224,7 +224,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
         const account = await prisma.account.findUnique({
           where: { id: user.id },
           include: {
-            Player: true
+            player: true
           }
         });
 
@@ -238,7 +238,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
         return renderPage(reply, 'profile', {
           title: 'Meu Perfil',
           account: account,
-          player: account.Player
+          player: account.player
         });
 
       } catch (error) {
@@ -273,14 +273,14 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           where: { id: user.id },
           data: {
             email,
-            Player: {
+            player: {
               update: {
                 name
               }
             }
           },
           include: {
-            Player: true
+            player: true
           }
         });
 
@@ -298,7 +298,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
         return renderPage(reply, 'profile', {
           title: 'Meu Perfil',
           account: updatedAccount,
-          player: updatedAccount.Player,
+          player: updatedAccount.player,
           success: 'Perfil atualizado com sucesso!'
         });
 
@@ -332,7 +332,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
         const user = await prisma.account.findUnique({
           where: { email },
           include: {
-            Player: true
+            player: true
           }
         });
 

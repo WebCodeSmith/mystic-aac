@@ -1,50 +1,38 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../services/prisma';
-import { z } from 'zod';
 import { requireAuth } from '../middleware/auth-middleware';
+import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
-import type { news, Prisma } from '@prisma/client';
+import { z } from 'zod';
 
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: any;
-  }
+interface NewsItem {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  date: Date;
+  author: {
+    id: number;
+    username: string;
+  } | null;
 }
 
-// Esquema de validação para criação de notícia
-const NewsCreateSchema = z.object({
-  title: z.string({ 
-    required_error: "Título é obrigatório",
-    invalid_type_error: "Título deve ser um texto" 
-  }).min(3, "Título deve ter pelo menos 3 caracteres"),
-  
-  summary: z.string({ 
-    required_error: "Resumo é obrigatório",
-    invalid_type_error: "Resumo deve ser um texto" 
-  }).min(10, "Resumo deve ter pelo menos 10 caracteres"),
-  
-  content: z.string({ 
-    required_error: "Conteúdo é obrigatório",
-    invalid_type_error: "Conteúdo deve ser um texto" 
-  }).min(20, "Conteúdo deve ter pelo menos 20 caracteres"),
-
+const newsSchema = z.object({
+  title: z.string().min(3).max(100),
+  summary: z.string().min(10).max(255),
+  content: z.string().min(10),
   date: z.string().datetime().optional()
 });
 
-// Definir tipos para parâmetros e body
-interface NewsParams {
-  id: string;
-}
+type NewsInput = z.infer<typeof newsSchema>;
 
-type NewsBody = z.infer<typeof NewsCreateSchema>;
-
-// Plugin de rotas de notícias
 export default async function newsRoutes(fastify: FastifyInstance) {
   // Rota para listar notícias
   fastify.get('/', { 
     preHandler: [requireAuth] 
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const user = await getSessionUser(request);
       const news = await prisma.news.findMany({
         orderBy: { date: 'desc' },
         take: 10,
@@ -68,13 +56,14 @@ export default async function newsRoutes(fastify: FastifyInstance) {
 
   // Rota para buscar notícia por ID
   fastify.get<{ 
-    Params: NewsParams 
+    Params: { id: string } 
   }>('/:id', { 
     preHandler: [requireAuth] 
-  }, async (request: FastifyRequest<{ Params: NewsParams }>, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
     const { id } = request.params;
 
     try {
+      const user = await getSessionUser(request);
       const news = await prisma.news.findUnique({
         where: { id: Number(id) },
         select: {
@@ -108,14 +97,14 @@ export default async function newsRoutes(fastify: FastifyInstance) {
     preHandler: [requireAuth] 
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Verificar se o usuário existe e é admin
-      if (!request.session?.user?.role || request.session.user.role !== 'ADMIN') {
+      const user = await getSessionUser(request);
+      if (!user?.role || user.role !== 'ADMIN') {
         return reply.status(403).send({ error: 'Acesso não autorizado' });
       }
 
       return reply.view('pages/news-create', { 
         title: 'Criar Notícia',
-        user: request.user,
+        user: user,
         isEditing: false,
         newsItem: null
       });
@@ -129,7 +118,7 @@ export default async function newsRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post<{
-    Body: NewsBody
+    Body: NewsInput
   }>('/create', { 
     preHandler: [requireAuth],
     schema: {
@@ -146,12 +135,12 @@ export default async function newsRoutes(fastify: FastifyInstance) {
     }
   }, async (request, reply) => {
     try {
-      // Verificar se o usuário existe e é admin
-      if (!request.session?.user?.role || request.session.user.role !== 'ADMIN') {
+      const user = await getSessionUser(request);
+      if (!user?.role || user.role !== 'ADMIN') {
         return reply.status(403).send({ error: 'Acesso não autorizado' });
       }
 
-      const result = NewsCreateSchema.safeParse(request.body);
+      const result = newsSchema.safeParse(request.body);
       
       if (!result.success) {
         return reply.status(400).send({
@@ -168,8 +157,8 @@ export default async function newsRoutes(fastify: FastifyInstance) {
         content,
         date: date ? new Date(date) : new Date(),
         updatedAt: new Date(),
-        authorId: request.session.user.id
-      } satisfies Prisma.newsUncheckedCreateInput;
+        authorId: user.id
+      };
 
       const news = await prisma.news.create({
         data: newsData
@@ -187,17 +176,18 @@ export default async function newsRoutes(fastify: FastifyInstance) {
 
   // Rota para atualizar notícia
   fastify.put<{ 
-    Params: NewsParams, 
-    Body: NewsBody 
+    Params: { id: string }, 
+    Body: NewsInput
   }>('/:id', { 
     preHandler: [requireAuth] 
-  }, async (request: FastifyRequest<{ Params: NewsParams, Body: NewsBody }>, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Params: { id: string }, Body: NewsInput }>, reply: FastifyReply) => {
     const { id } = request.params;
     const { title, summary, content, date } = request.body;
 
     try {
+      const user = await getSessionUser(request);
       // Validação dos dados
-      const validatedData = NewsCreateSchema.parse({
+      const validatedData = newsSchema.parse({
         title,
         summary,
         content,
@@ -229,13 +219,14 @@ export default async function newsRoutes(fastify: FastifyInstance) {
 
   // Rota para deletar notícia
   fastify.delete<{ 
-    Params: NewsParams 
+    Params: { id: string } 
   }>('/:id', { 
     preHandler: [requireAuth] 
-  }, async (request: FastifyRequest<{ Params: NewsParams }>, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
     const { id } = request.params;
 
     try {
+      const user = await getSessionUser(request);
       await prisma.news.delete({
         where: { id: Number(id) }
       });

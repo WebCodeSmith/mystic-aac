@@ -12,7 +12,7 @@ import rateLimit from '@fastify/rate-limit';
 import ejs from 'ejs';
 import path from 'path';
 import Redis from 'ioredis';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { ResourceManager } from './utils/server-helpers';
 import { ConfigService } from './services/config.service';
@@ -22,6 +22,7 @@ import { globalLogger } from './middleware/global-logger';
 import newsRoutes from './routes/news';
 import authRoutes from './routes/auth';
 import accountRoutes from './routes/account';
+import characterRoutes from './routes/character';
 import { getSessionUser } from './types/fastify-custom';
 
 export class Server {
@@ -135,6 +136,7 @@ export class Server {
     // Outras rotas com prefixos
     await this.app.register(newsRoutes, { prefix: '/news' });
     await this.app.register(accountRoutes, { prefix: '/account' });
+    await this.app.register(characterRoutes, { prefix: '/character' });
   }
 
   async start() {

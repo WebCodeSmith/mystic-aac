@@ -1,0 +1,105 @@
+<%- include('../partials/head', { title: 'Criar Personagem', extraCSS: '/dashboard.css' }) %>
+
+<div class="dashboard-container">
+    <div class="dashboard-content">
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h2>Criar Novo Personagem</h2>
+            </div>
+            
+            <form action="/character/create" method="POST" class="character-form">
+                <div class="form-group">
+                    <label for="name">Nome do Personagem</label>
+                    <input type="text" id="name" name="name" class="form-control" required 
+                           pattern="[a-zA-Z ]{3,20}" title="O nome deve ter entre 3 e 20 caracteres e conter apenas letras">
+                </div>
+
+                <div class="form-group">
+                    <label for="vocation">Vocação</label>
+                    <select id="vocation" name="vocation" class="form-control" required>
+                        <option value="">Selecione uma vocação</option>
+                        <option value="Knight">Knight</option>
+                        <option value="Paladin">Paladin</option>
+                        <option value="Sorcerer">Sorcerer</option>
+                        <option value="Druid">Druid</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sex">Sexo</label>
+                    <select id="sex" name="sex" class="form-control" required>
+                        <option value="male">Masculino</option>
+                        <option value="female">Feminino</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="world">Mundo</label>
+                    <select id="world" name="world" class="form-control" required>
+                        <option value="1">Mundo Principal</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Criar Personagem</button>
+                    <a href="/dashboard" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.character-form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #5c4033;
+    color: white;
+}
+
+.btn-secondary {
+    background: #8b6b5f;
+    color: white;
+    text-decoration: none;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+</style>
+
+<%- include('../partials/footer') %>

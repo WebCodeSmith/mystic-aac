@@ -1,13 +1,25 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { 
-  requireAuth, 
-  logUserActivity
-} from '../middleware/auth-middleware';
-import { renderPage } from '../utils/render-helper';
 import prisma from '../services/prisma';
-import logger from '../config/logger';
+import { z } from 'zod';
+import bcrypt from 'bcrypt';
+import { requireAuth } from '../middleware/auth-middleware';
 import { getSessionUser } from '../types/fastify-custom';
+import logger from '../config/logger';
 import { ConfigService } from '../services/config.service';
+import { renderPage } from '../utils/render-helper';
+
+// Interface para notícia
+interface NewsItem {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  date: Date;
+  author: {
+    id: number;
+    username: string;
+  } | null;
+}
 
 // Constantes
 const ONLINE_PLAYERS_COUNT = 42; // Substituir por valor real/dinâmico
@@ -61,22 +73,32 @@ const renderPageWithOnlinePlayers = async (
   }
 };
 
+// Schema para validação dos dados do personagem
+const characterCreateSchema = z.object({
+  name: z.string()
+    .min(3, 'O nome deve ter pelo menos 3 caracteres')
+    .max(20, 'O nome deve ter no máximo 20 caracteres')
+    .regex(/^[a-zA-Z ]+$/, 'O nome deve conter apenas letras'),
+  vocation: z.enum(['Knight', 'Paladin', 'Sorcerer', 'Druid']),
+  sex: z.enum(['male', 'female']),
+  world: z.string()
+});
+
 // Plugin de rotas de autenticação
 export default async function authRoutes(fastify: FastifyInstance) {
   // Inicializar ConfigService
   const configService = new ConfigService();
 
-  // Rota de index
+  // Rota para a página inicial
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      // Buscar as últimas notícias
       const news = await prisma.news.findMany({
-        orderBy: { date: 'desc' },
+        orderBy: {
+          date: 'desc'
+        },
         take: 5,
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          date: true,
+        include: {
           author: {
             select: {
               id: true,
@@ -86,24 +108,27 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
       });
 
-      return reply.view('pages/index', { 
-        title: 'Bem-vindo',
-        serverName: configService.getServerName(), 
+      // Formatar as notícias para exibição
+      const formattedNews = (news as NewsItem[]).map(item => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        content: item.content,
+        date: item.date,
+        authorName: item.author?.username || 'Sistema'
+      }));
+
+      const user = await getSessionUser(request);
+      return reply.view('pages/index', {
+        title: 'Início',
+        user,
+        news: formattedNews,
         onlinePlayers: ONLINE_PLAYERS_COUNT,
-        news: news.map(newsItem => {
-          console.log(newsItem);
-          return {
-            ...newsItem,
-            authorName: newsItem.author ? newsItem.author.username : 'Autor desconhecido'
-          }
-        }) // Passar as notícias para a view
+        serverName: configService.get('serverName') || 'Mystic AAC'
       });
     } catch (error) {
-      logger.error('Erro ao renderizar página inicial', {
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : 'Sem stack trace'
-      });
-      return reply.status(500).send('Erro interno ao renderizar página inicial');
+      logger.error('Erro ao renderizar página inicial:', error);
+      return reply.status(500).send('Erro ao carregar página inicial');
     }
   });
 
@@ -168,12 +193,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
   );
 
   // Rota de logout
-  fastify.get('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.all('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.session.destroy();
-      return reply.redirect('/account/login');
+      return reply.redirect('/');
     } catch (error) {
-      logger.error('Erro ao fazer logout:', error);
+      logger.error('Erro ao fazer logout', error);
       return reply.status(500).send('Erro ao fazer logout');
     }
   });

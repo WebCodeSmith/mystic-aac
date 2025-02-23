@@ -74,7 +74,11 @@
         <div class="dashboard-card">
             <div class="dashboard-card-header">
                 <h2>Personagens</h2>
-                <button class="btn-primary">Criar Personagem</button>
+                <div class="dashboard-card-actions">
+                    <a href="/character/create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Criar Personagem
+                    </a>
+                </div>
             </div>
             <div class="character-list">
                 <% if (player) { %>

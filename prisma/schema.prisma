@@ -18,8 +18,8 @@ model account {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime
   passwordreset passwordreset[]
-  player        player?
-  news          news[]          @relation("AuthorNews") // Adicione este campo
+  player        player[]        
+  news          news[]          @relation("AuthorNews") 
 }
 
 model character {
@@ -38,8 +38,8 @@ model news {
   content   String    @db.Text
   date      DateTime
   image     String?   @db.Text
-  authorId  Int? // Adicione este campo
-  author    account?  @relation("AuthorNews", fields: [authorId], references: [id]) // Relacionamento com o modelo account
+  authorId  Int? 
+  author    account?  @relation("AuthorNews", fields: [authorId], references: [id]) 
   createdAt DateTime  @default(now())
   updatedAt DateTime
   deletedAt DateTime?
@@ -63,10 +63,18 @@ model player {
   name       String   @unique(map: "Player_name_key")
   level      Int
   vocation   String
+  sex        String
   experience BigInt
+  health     Int      @default(150)
+  healthmax  Int      @default(150)
+  mana       Int      @default(0)
+  manamax    Int      @default(0)
+  looktype   Int
+  town_id    Int      @default(1)
+  world      Int      @default(1)
   avatar     String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime
-  accountId  Int?     @unique(map: "Player_accountId_key")
+  accountId  Int?     
   account    account? @relation(fields: [accountId], references: [id], map: "Player_accountId_fkey")
 }

@@ -92,7 +92,7 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     
     // Salvar o token no banco de dados com expiração
-    await prisma.PasswordReset.create({
+    await prisma.passwordreset.create({
       data: {
         accountId: user.id,
         token,
@@ -131,15 +131,18 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      return await prisma.account.create({
+      const account = await prisma.account.create({
         data: {
           username: username.toLowerCase(),
           email: email.toLowerCase(),
           password: hashedPassword,
           role: 'USER',
-          isActive: true
+          isActive: true,
+          updatedAt: new Date()
         }
       });
+
+      return account;
     } catch (error: unknown) {
       logger.error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       throw new Error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
