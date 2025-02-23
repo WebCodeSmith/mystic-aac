@@ -7,6 +7,7 @@ import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
 import { ConfigService } from '../services/config.service';
 import { renderPage } from '../utils/render-helper';
+import downloadRoutes from './download';
 
 // Interface para notícia
 interface NewsItem {
@@ -222,4 +223,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.status(500).send('Erro ao fazer logout');
     }
   });
+
+  // Registrando as rotas de download
+  fastify.register(downloadRoutes);
 }

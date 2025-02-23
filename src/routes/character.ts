@@ -4,6 +4,7 @@ import prisma from '../services/prisma';
 import { requireAuth } from '../middleware/auth-middleware';
 import logger from '../config/logger';
 import { getSessionUser } from '../types/fastify-custom';
+import { defaultCharacterData } from '../config/config'; // Ajustando o caminho para o arquivo de configuração
 
 // Schema para validação dos dados do personagem
 const characterCreateSchema = z.object({
@@ -69,23 +70,15 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Criar o personagem
+      // Criar o personagem usando as configurações padrão
       const character = await prisma.player.create({
         data: {
           name: result.data.name,
           vocation: result.data.vocation,
           sex: result.data.sex,
-          level: 1,
-          experience: 0,
-          health: 150,
-          healthmax: 150,
-          mana: 0,
-          manamax: 0,
           accountId: user.id,
           looktype: result.data.sex === 'male' ? 128 : 136,
-          town_id: 1,
-          world: parseInt(result.data.world),
-          updatedAt: new Date()
+          ...defaultCharacterData
         }
       });
 

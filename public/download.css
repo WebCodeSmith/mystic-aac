@@ -1,0 +1,70 @@
+.download-page {
+    background-color: #1a1a1a; /* Fundo escuro */
+    color: white; /* Cor do texto para contraste */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Centralizando o texto */
+}
+
+.download-page h1 {
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.download-page p {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.download-card {
+    background-color: #444; /* Fundo do card */
+    color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    transition: transform 0.2s;
+}
+
+.download-card:hover {
+    transform: translateY(-2px);
+}
+
+.download-card h2 {
+    color: #FFD700; /* Amarelo para os títulos */
+}
+
+.download-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.download-link {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.download-link:hover {
+    background-color: #0056b3;
+}
+
+.disclaimer {
+    background-color: #333;
+    color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: center;
+}
