@@ -1,49 +1,50 @@
+
 # Mystic AAC - Open Tibia Server Management Platform
 
-## Descrição
-Mystic AAC é uma plataforma de gerenciamento de servidores Open Tibia, desenvolvida com tecnologias modernas para oferecer uma experiência robusta e escalável.
+## Description
+Mystic AAC is a management platform for Open Tibia servers, built with modern technologies to provide a robust and scalable experience.
 
-## Tecnologias Principais
+## Key Technologies
 - **Backend**: Fastify
-- **Banco de Dados**: Prisma ORM
-- **Autenticação**: Sessões seguras com Redis
+- **Database**: Prisma ORM
+- **Authentication**: Secure sessions with Redis
 - **Frontend**: EJS Templates
-- **Linguagem**: TypeScript
-- **Gerenciamento de Configuração**: Zod Schema Validation
+- **Language**: TypeScript
+- **Configuration Management**: Zod Schema Validation
 
-## Pré-requisitos
+## Prerequisites
 - Node.js (v18+)
 - pnpm
 - Redis
 - PostgreSQL
 
-## Instalação do Redis
+## Installing Redis
 
 ### Windows
-1. **Usando Windows Subsystem for Linux (WSL2) (Recomendado)**:
+1. **Using Windows Subsystem for Linux (WSL2) (Recommended)**:
    ```bash
-   # Instalar WSL2 e Ubuntu
+   # Install WSL2 and Ubuntu
    wsl --install
    
-   # Abrir terminal do Ubuntu e executar:
+   # Open Ubuntu terminal and run:
    sudo apt update
    sudo apt install redis-server
    
-   # Iniciar serviço Redis
+   # Start Redis service
    sudo service redis-server start
    ```
 
-2. **Instalação Manual**:
-   - Baixar Redis do site oficial: https://github.com/tporadowski/redis/releases
-   - Extrair e executar `redis-server.exe`
-   - Adicionar ao PATH para acesso via linha de comando
+2. **Manual Installation**:
+   - Download Redis from the official site: https://github.com/tporadowski/redis/releases
+   - Extract and run `redis-server.exe`
+   - Add to PATH for command-line access
 
 ### macOS
 ```bash
 brew update
 brew install redis
 
-# Iniciar serviço Redis
+# Start Redis service
 brew services start redis
 ```
 
@@ -52,119 +53,119 @@ brew services start redis
 sudo apt update
 sudo apt install redis-server
 
-# Iniciar serviço Redis
+# Start Redis service
 sudo systemctl start redis-server
 sudo systemctl enable redis-server
 ```
 
-### Verificar Instalação do Redis
+### Verify Redis Installation
 ```bash
-# Verificar se Redis está rodando
+# Check if Redis is running
 redis-cli ping
-# Deve retornar "PONG"
+# Should return "PONG"
 ```
 
-## Instalação
+## Installation
 
-### Clonar o Repositório
+### Clone the Repository
 ```bash
-git clone https://github.com/seu-usuario/mystic-aac.git
+git clone https://github.com/your-username/mystic-aac.git
 cd mystic-aac
 ```
 
-### Instalar Dependências
+### Install Dependencies
 ```bash
 pnpm install
 ```
 
-### Configuração do Ambiente
-1. Copie `.env.example` para `.env`
-2. Preencha as variáveis de ambiente necessárias
+### Set Up the Environment
+1. Copy `.env.example` to `.env`
+2. Fill in the required environment variables
 
-### Configurações do Banco de Dados
+### Database Configuration
 ```bash
 pnpm prisma generate
 pnpm prisma migrate dev
 ```
 
-### Migrações e Utilitários do Prisma
+### Prisma Migrations and Utilities
 
-#### Criar ou Atualizar Migrações
+#### Create or Update Migrations
 ```bash
-# Criar uma nova migração baseada em mudanças no schema
+# Create a new migration based on schema changes
 pnpm prisma migrate dev --name init
 
-# Aplicar migrações em produção
+# Apply migrations in production
 pnpm prisma migrate deploy
 ```
 
-#### Utilitários do Banco de Dados (Opcional)
+#### Database Utilities (Optional)
 ```bash
-# Abrir visualizador de banco de dados
+# Open database viewer
 pnpm prisma studio
 
-# Resetar banco de dados (CUIDADO: Apaga todos os dados)
+# Reset database (WARNING: Deletes all data)
 pnpm prisma migrate reset
 ```
 
-#### Comandos Adicionais do Prisma
+#### Additional Prisma Commands
 ```bash
-# Gerar cliente Prisma
+# Generate Prisma client
 pnpm prisma generate
 
-# Formatar schema do Prisma
+# Format Prisma schema
 pnpm prisma format
 
-# Validar schema do Prisma
+# Validate Prisma schema
 pnpm prisma validate
 ```
 
-#### Resolução de Problemas
-- Verifique se `DATABASE_URL` no `.env` está correto
-- Certifique-se de que o PostgreSQL está rodando
-- Confirme se o usuário do banco de dados tem permissões suficientes
+#### Troubleshooting
+- Check if `DATABASE_URL` in `.env` is correct
+- Ensure PostgreSQL is running
+- Confirm the database user has sufficient permissions
 
-### Executar o Projeto
+### Run the Project
 ```bash
-# Modo de Desenvolvimento
+# Development mode
 pnpm dev
 
-# Modo de Produção
+# Production mode
 pnpm build
 pnpm start
 ```
 
-## Estrutura do Projeto
+## Project Structure
 ```
 mystic-aac/
-├── prisma/           # Definições de modelo do banco de dados
-├── public/           # Arquivos estáticos
+├── prisma/           # Database model definitions
+├── public/           # Static files
 ├── src/
-│   ├── config/       # Configurações do aplicativo
-│   ├── middleware/   # Middlewares customizados
-│   ├── routes/       # Definições de rotas
-│   ├── services/     # Lógica de negócio e serviços
-│   ├── types/        # Definições de tipos TypeScript
-│   └── utils/        # Utilitários
-├── views/            # Templates EJS
-└── .env              # Configurações de ambiente
+│   ├── config/       # App configurations
+│   ├── middleware/   # Custom middlewares
+│   ├── routes/       # Route definitions
+│   ├── services/     # Business logic and services
+│   ├── types/        # TypeScript type definitions
+│   └── utils/        # Utilities
+├── views/            # EJS templates
+└── .env              # Environment configurations
 ```
 
-## Recursos Principais
-- Autenticação de usuários
-- Gerenciamento de contas
-- Sistema de sessão seguro
-- Integração com banco de dados PostgreSQL
-- Validação de esquema com Zod
+## Main Features
+- User authentication
+- Account management
+- Secure session system
+- PostgreSQL database integration
+- Schema validation with Zod
 - Rate limiting
-- Logging detalhado
+- Detailed logging
 
-## Contribuição
-1. Faça um fork do projeto
-2. Crie sua branch de feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+## Contributing
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
 
-## Licença
-Este projeto está licenciado sob a MIT License.
+## License
+This project is licensed under the MIT License.

@@ -11,14 +11,12 @@ declare module '@fastify/session' {
 }
 
 // Definir tipos de roles possíveis
-export type UserRole = 'USER' | 'ADMIN' | 'MODERATOR' | 'GUEST';
+export type UserRole = 'USER' | 'ADMIN';
 
 // Mapa de hierarquia de permissões
 const ROLE_HIERARCHY: Record<UserRole, number> = {
-  'GUEST': 1,
-  'USER': 2,
-  'MODERATOR': 3,
-  'ADMIN': 4
+  'USER': 1,
+  'ADMIN': 2
 };
 
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
@@ -35,7 +33,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
     // Verificação adicional de permissões
     const user = request.session.user;
-    const allowedRoles = ['admin', 'player'];
+    const allowedRoles = ['USER', 'ADMIN'];
 
     if (!allowedRoles.includes(user.role)) {
       return reply.status(403).redirect('/unauthorized');
