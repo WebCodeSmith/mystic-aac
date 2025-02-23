@@ -240,4 +240,44 @@ export default async function authRoutes(fastify: FastifyInstance) {
         return reply.status(500).send('Error loading download page');
     }
   });
+
+  // Ranking route
+  fastify.get('/highscores', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const topPlayers = await prisma.player.findMany({
+        orderBy: [
+          { level: 'desc' },    // Primeiro ordena por level
+          { experience: 'desc' } // Depois por experiência
+        ],
+        take: 50, // Limita aos top 50 jogadores
+        select: {
+          name: true,
+          level: true,
+          vocation: true,
+          experience: true
+        }
+      });
+
+      // Formata os dados dos jogadores com os nomes das vocações
+      const formattedPlayers = topPlayers.map(player => ({
+        ...player,
+        vocation: getVocationName(player.vocation)
+      }));
+
+      return reply.view('pages/ranking', {
+        title: 'Ranking - Top Players',
+        topPlayers: formattedPlayers,
+        serverName: configService.get('serverName') || 'Mystic AAC',
+        user: request.session?.user
+      });
+
+    } catch (error) {
+      logger.error('Erro ao carregar ranking:', error);
+      return reply.status(500).view('pages/error', {
+        title: 'Erro',
+        message: 'Falha ao carregar ranking'
+      });
+    }
+  });
+
 }
