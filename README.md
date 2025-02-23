@@ -1,4 +1,3 @@
-
 # Mystic AAC - Open Tibia Server Management Platform
 
 ## Description
@@ -167,5 +166,5 @@ mystic-aac/
 4. Push to the branch (`git push origin feature/new-feature`)
 5. Open a Pull Request
 
-## License
-This project is licensed under the MIT License.
+## Community
+Join our Discord community: [https://discord.gg/PcxCdKS](https://discord.gg/PcxCdKS)
