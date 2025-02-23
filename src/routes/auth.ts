@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { 
   requireAuth, 
   preventAuthenticatedAccess, 
-  logUserActivity 
+  logUserActivity
 } from '../middleware/auth-middleware';
 import { 
   AuthService 
@@ -11,9 +11,10 @@ import { renderPage } from '../utils/render-helper';
 import { AppError } from '../middleware/error-handler';
 import prisma from '../services/prisma';
 import logger from '../config/logger';
-import { User } from '../types/express-session';
+import { User } from '../types/fastify-session';
 import path from 'path';
 import { ConfigService } from '../services/config.service';
+import { RateLimiter } from '../utils/rate-limiter'; // Importação correta
 
 // Constantes
 const ONLINE_PLAYERS_COUNT = 42; // Substituir por valor real/dinâmico
@@ -95,96 +96,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Rota de registro
-  fastify.post('/register', 
-    { 
-      schema: {
-        body: {
-          type: 'object',
-          properties: {
-            username: { 
-              type: 'string', 
-              minLength: 3, 
-              maxLength: 50,
-              pattern: '^[a-zA-Z0-9_]+$'
-            },
-            email: { type: 'string', format: 'email' },
-            password: { 
-              type: 'string', 
-              minLength: 8, 
-              maxLength: 100,
-              pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$'
-            },
-            confirmPassword: { type: 'string' }
-          },
-          required: ['username', 'email', 'password', 'confirmPassword']
-        }
-      },
-      preHandler: [
-        preventAuthenticatedAccess
-      ]
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const accountData = request.body as { 
-          username: string; 
-          email: string; 
-          password: string; 
-          confirmPassword: string 
-        };
-        
-        await AuthService.createAccount(accountData);
-
-        return renderPageWithOnlinePlayers(reply, 'register', { 
-          title: 'Registro', 
-          success: 'Conta criada com sucesso! Faça login.' 
-        });
-      } catch (error) {
-        logger.error('Erro no registro:', error);
-        return renderPageWithOnlinePlayers(reply, 'register', { 
-          title: 'Registro', 
-          error: error instanceof Error ? error.message : 'Erro interno no servidor'
-        });
-      }
-    }
-  );
-
-  // Rota de recuperação de senha
-  fastify.post('/recover-password', 
-    { 
-      schema: {
-        body: {
-          type: 'object',
-          properties: {
-            email: { type: 'string', format: 'email' },
-            username: { type: 'string', minLength: 3 }
-          },
-          required: ['email', 'username']
-        }
-      },
-      preHandler: [
-        preventAuthenticatedAccess
-      ]
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { email, username } = request.body as { email: string, username: string };
-        const result = await AuthService.recoverPassword(email, username);
-
-        return renderPageWithOnlinePlayers(reply, 'recover-password', { 
-          title: 'Recuperar Senha', 
-          success: 'Instruções de recuperação enviadas para seu e-mail.' 
-        });
-      } catch (error) {
-        logger.error('Erro na recuperação de senha:', error);
-        return renderPageWithOnlinePlayers(reply, 'recover-password', { 
-          title: 'Recuperar Senha', 
-          error: error instanceof Error ? error.message : 'Erro interno no servidor'
-        });
-      }
-    }
-  );
-
   // Rota de dashboard
   fastify.get('/dashboard', 
     { 
@@ -194,6 +105,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       ]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
+      console.log('Acessando a rota do dashboard'); // Log adicionado
       try {
         const user = getSessionUser(request);
         const player = await prisma.player.findUnique({
@@ -208,40 +120,29 @@ export default async function authRoutes(fastify: FastifyInstance) {
           }
         });
 
-        return renderPageWithOnlinePlayers(reply, 'dashboard', {
+        return renderPage(reply, 'dashboard', {
           title: 'Dashboard',
           user: user,
           player: player
         });
       } catch (error) {
         logger.error('Erro ao buscar informações do jogador:', error);
-        return renderPageWithOnlinePlayers(reply, 'error', {
+        return renderPage(reply, 'error', {
           title: 'Erro',
-          error: 'Não foi possível carregar as informações do jogador'
+
         });
       }
     }
   );
 
-  // Rota de logout usando route
-  fastify.route({
-    method: 'GET',
-    url: '/logout',
-    preHandler: [requireAuth],
-    handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        // Destruir sessão
-        await request.session.destroy();
-
-        logger.info('Usuário deslogado');
-        return reply.redirect('/account/login');
-      } catch (error) {
-        logger.error('Erro no logout:', error);
-        return renderPageWithOnlinePlayers(reply, 'error', {
-          title: 'Erro de Logout',
-          error: 'Erro interno durante o logout'
-        });
-      }
+  // Rota de logout
+  fastify.get('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.session.destroy();
+      return reply.redirect('/account/login');
+    } catch (error) {
+      logger.error('Erro ao fazer logout:', error);
+      return reply.status(500).send('Erro ao fazer logout');
     }
   });
 }

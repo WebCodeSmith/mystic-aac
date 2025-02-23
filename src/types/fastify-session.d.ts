@@ -1,3 +1,5 @@
+// Este arquivo foi renomeado para fastify-session.d.ts
+
 import 'fastify'
 import '@fastify/session'
 
@@ -33,6 +35,12 @@ declare module 'fastify' {
   interface FastifyRequest {
     session: FastifySessionObject & {
       destroy(): Promise<void>;
+    };
+  }
+
+  interface FastifyReply {
+    locals: {
+      user?: User;
     };
   }
 }

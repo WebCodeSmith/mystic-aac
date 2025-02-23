@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { AppError } from './error-handler';
 import logger from '../config/logger';
-import { User } from '../types/express-session';
+import { User } from '../types/fastify-session';
 
 // Estender o tipo da sessão para incluir a propriedade user
 declare module '@fastify/session' {
@@ -25,20 +25,11 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   try {
     // Verificação robusta da sessão
     if (!request.session) {
-      logger.error('ERRO: Sessão não inicializada', {
-        nodeEnv: process.env.NODE_ENV,
-        url: request.url
-      });
       return reply.status(401).redirect('/login');
     }
 
     // Verificação do usuário na sessão
     if (!request.session.user || !request.session.user.id) {
-      logger.error('ERRO: Usuário inválido na sessão', {
-        sessionUserType: typeof request.session.user,
-        nodeEnv: process.env.NODE_ENV,
-        url: request.url
-      });
       return reply.status(401).redirect('/login');
     }
 
@@ -47,44 +38,16 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     const allowedRoles = ['admin', 'player'];
 
     if (!allowedRoles.includes(user.role)) {
-      logger.error('ERRO: Usuário sem permissão', {
-        userRole: user.role,
-        allowedRoles,
-        nodeEnv: process.env.NODE_ENV,
-        url: request.url
-      });
       return reply.status(403).redirect('/unauthorized');
     }
 
     // Verificação de status da conta
     if (!user.isActive) {
-      logger.error('ERRO: Conta inativa', {
-        userId: user.id,
-        nodeEnv: process.env.NODE_ENV,
-        url: request.url
-      });
       return reply.status(403).redirect('/account-inactive');
     }
 
-    // Log de sucesso na autenticação
-    logger.info('SUCESSO: Autenticação validada', {
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      nodeEnv: process.env.NODE_ENV,
-      url: request.url
-    });
-
     return;
   } catch (error) {
-    // Log de erro inesperado
-    logger.error('ERRO CRÍTICO: Falha na verificação de autenticação', {
-      error: error instanceof Error ? error.message : 'Erro desconhecido',
-      errorStack: error instanceof Error ? error.stack : 'Sem stack trace',
-      nodeEnv: process.env.NODE_ENV,
-      url: request.url
-    });
-
     return reply.status(500).redirect('/login');
   }
 };
@@ -98,7 +61,6 @@ export const checkPermission = (requiredRole: UserRole) => {
         : undefined;
 
     if (!user) {
-      logger.warn('Tentativa de acesso não autenticado com permissão específica');
       throw new AppError('Não autorizado', 401);
     }
 
@@ -106,7 +68,6 @@ export const checkPermission = (requiredRole: UserRole) => {
 
     // Verificar hierarquia de permissões
     if (ROLE_HIERARCHY[userRole] < ROLE_HIERARCHY[requiredRole]) {
-      logger.warn(`Usuário ${user.username} tentou acessar recurso sem permissão`);
       throw new AppError('Permissão insuficiente', 403);
     }
   };
@@ -120,7 +81,6 @@ export const logUserActivity = async (request: FastifyRequest, reply: FastifyRep
       : undefined;
 
   if (user) {
-    logger.info(`Usuário ${user.username} acessou ${request.url}`);
   }
 };
 

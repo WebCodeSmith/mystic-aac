@@ -1,13 +1,47 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as bcrypt from 'bcrypt';
 import prisma from '../services/prisma';
-import { User } from '../types/express-session';
-import { requireAuth } from '../middleware/auth-middleware';
-import { preventAuthenticatedAccess } from '../middleware/auth-middleware';
+import { User } from '../types/fastify-session';
+import { requireAuth, preventAuthenticatedAccess } from '../middleware/auth-middleware';
 import logger from '../config/logger';
+import Joi from 'joi';
+import { RateLimiter } from '../utils/rate-limiter';
+import { AuthService } from '../services/auth-service';
+import { renderPage } from '../utils/render-helper';
 
-// Esquema de validação para criação de conta
-const CreateAccountSchema = {
+// Constantes
+const SALT_ROUNDS = 10;
+
+// Helper para padronizar respostas
+const sendResponse = (reply: FastifyReply, status: number, message: string, data?: any) => {
+  return reply.status(status).send({
+    status,
+    message,
+    data
+  });
+};
+
+// Função para verificar se o usuário ou email já existem
+async function checkExistingAccount(username: string, email: string) {
+  return await prisma.account.findFirst({
+    where: {
+      OR: [
+        { username },
+        { email }
+      ]
+    }
+  });
+}
+
+// Esquema de validação para criação de conta usando Joi
+const CreateAccountJoiSchema = Joi.object({
+  username: Joi.string().min(3).max(50).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required()
+});
+
+// Esquema de validação para criação de conta para Fastify
+const CreateAccountFastifySchema = {
   body: {
     type: 'object',
     required: ['username', 'email', 'password'],
@@ -19,8 +53,14 @@ const CreateAccountSchema = {
   }
 };
 
-// Esquema de validação para login
-const LoginSchema = {
+// Esquema de validação para login usando Joi
+const LoginJoiSchema = Joi.object({
+  username: Joi.string().min(3).max(50).required(),
+  password: Joi.string().min(6).required()
+});
+
+// Esquema de validação para login para Fastify
+const LoginFastifySchema = {
   body: {
     type: 'object',
     required: ['username', 'password'],
@@ -35,18 +75,26 @@ const LoginSchema = {
 export default async function accountRoutes(fastify: FastifyInstance) {
   // Rota para exibir a página de criação de conta
   fastify.get('/create', async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.view('pages/account-create', { 
-      title: 'Criar Conta', 
-      error: null 
-    });
+    logger.info('Acessando a página de criação de conta');
+    try {
+      await renderPage(reply, 'account-create', { 
+        title: 'Criar Conta', 
+        error: undefined 
+      });
+      logger.info('Página de criação de conta renderizada com sucesso');
+    } catch (error) {
+      logger.error('Erro ao renderizar a página de criação de conta:', error);
+      return reply.status(500).send('Erro interno ao renderizar a página de criação de conta');
+    }
   });
 
   // Rota para processar a criação de conta
   fastify.post('/create', 
     { 
-      schema: CreateAccountSchema 
+      schema: CreateAccountFastifySchema 
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
+      logger.info('Iniciando criação de conta');
       try {
         const { username, email, password } = request.body as { 
           username: string, 
@@ -54,26 +102,18 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           password: string 
         };
 
+        logger.info('Dados da conta recebidos:', { username, email });
+
         // Verificar se usuário ou email já existem
-        const existingAccount = await prisma.account.findFirst({
-          where: {
-            OR: [
-              { username },
-              { email }
-            ]
-          }
-        });
+        const existingAccount = await checkExistingAccount(username, email);
 
         if (existingAccount) {
-          return reply.view('pages/account-create', { 
-            title: 'Criar Conta', 
-            error: 'Usuário ou email já cadastrado' 
-          });
+          logger.warn('Usuário ou email já cadastrado:', { username, email });
+          return sendResponse(reply, 400, 'Usuário ou email já cadastrado. Tente novamente.');
         }
 
         // Hash da senha
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         // Criar conta
         const newAccount = await prisma.account.create({
@@ -89,32 +129,83 @@ export default async function accountRoutes(fastify: FastifyInstance) {
                 name: username,
                 level: 1,
                 experience: 0,
-                vocation: 'Rookie', // Adicionado vocation padrão
-              }
-            }
+                vocation: 'Rookie', // Valor padrão para vocation
+              },
+            },
           },
           include: {
             Player: true
           }
         });
 
-        logger.info(`Nova conta criada: ${username}`);
+        // Converter BigInt para Number ou String antes de enviar a resposta
+        const responseAccount = {
+          ...newAccount,
+          Player: newAccount.Player ? {
+            ...newAccount.Player,
+            level: Number(newAccount.Player.level),
+            experience: Number(newAccount.Player.experience),
+          } : null,
+        };
 
-        // Redirecionar para login com mensagem de sucesso
-        return reply.view('pages/login', { 
-          title: 'Login', 
-          success: 'Conta criada com sucesso! Faça login para continuar.' 
-        });
+        logger.info(`Nova conta criada: ${username}`);
+        return sendResponse(reply, 201, 'Conta criada com sucesso', responseAccount);
 
       } catch (error) {
         logger.error('Erro na criação de conta:', error);
-        return reply.view('pages/account-create', { 
-          title: 'Criar Conta', 
-          error: 'Erro interno ao criar conta' 
-        });
+        return sendResponse(reply, 500, 'Erro interno ao criar conta');
       }
     }
   );
+
+    // Rota de login
+    fastify.post('/login', 
+      { 
+        schema: {
+          body: {
+            type: 'object',
+            properties: {
+              username: { type: 'string' },
+              password: { type: 'string' }
+            },
+            required: ['username', 'password']
+          }
+        },
+        preHandler: [
+          preventAuthenticatedAccess
+        ]
+      },
+      async (request: FastifyRequest, reply: FastifyReply) => {
+        const { username, password } = request.body as { username: string; password: string };  
+  
+        // Verificar tentativas de login
+        const canAttemptLogin = RateLimiter.checkLoginAttempts(username, request);
+        if (!canAttemptLogin) {
+          return reply.status(429).send({ message: 'Too many login attempts. Please try again later.' });
+        }
+  
+        try {
+          const user = await AuthService.validateLogin(username, password);
+          if (!user) {
+            return renderPage(reply, 'login', { 
+              title: 'Login', 
+              error: 'Credenciais inválidas' 
+            });
+          }
+  
+          // Criar sessão
+          request.session.user = user;
+  
+          return reply.redirect('/dashboard');
+        } catch (error) {
+          logger.error('Erro no login:', error);
+          return renderPage(reply, 'login', { 
+            title: 'Login', 
+            error: error instanceof Error ? error.message : 'Erro interno no servidor'
+          });
+        }
+      }
+    );
 
   // Rota para exibir a página de login
   fastify.get('/login', 
@@ -122,7 +213,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
     preHandler: [preventAuthenticatedAccess]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      return reply.view('pages/login', {
+      return renderPage(reply, 'login', {
         title: 'Login',
         error: request.query && typeof request.query === 'object' && 'error' in request.query 
           ? request.query.error as string 
@@ -130,123 +221,9 @@ export default async function accountRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       logger.error('Erro ao renderizar página de login', error);
-      return reply.status(500).send('Erro interno do servidor');
+      return sendResponse(reply, 500, 'Erro interno do servidor');
     }
   });
-
-  // Rota para processar o login
-  fastify.post('/login', 
-    { 
-      schema: LoginSchema 
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { username, password } = request.body as { 
-          username: string, 
-          password: string 
-        };
-
-        // Buscar usuário
-        const account = await prisma.account.findUnique({
-          where: { username }
-        });
-
-        if (!account) {
-          return reply.view('pages/login', { 
-            title: 'Login', 
-            error: 'Usuário não encontrado' 
-          });
-        }
-
-        // Verificar senha
-        const isPasswordValid = await bcrypt.compare(password, account.password);
-
-        if (!isPasswordValid) {
-          return reply.view('pages/login', { 
-            title: 'Login', 
-            error: 'Senha incorreta' 
-          });
-        }
-
-        // Verificação de sessão com tratamento detalhado
-        return new Promise<void>((resolve, reject) => {
-          // Verificação explícita da sessão
-          if (!request.session) {
-            logger.error('Sessão não inicializada');
-            return reply.status(500).view('pages/error', {
-              title: 'Erro de Sessão',
-              message: 'Não foi possível iniciar a sessão. Tente novamente.'
-            });
-          }
-
-          // Regenerar sessão de forma segura
-          request.session.regenerate(async (err: Error | null) => {
-            if (err) {
-              logger.error('Erro ao regenerar sessão', {
-                error: err.message,
-                stack: err.stack
-              });
-              return reply.status(500).view('pages/error', {
-                title: 'Erro de Sessão',
-                message: 'Não foi possível iniciar a sessão. Tente novamente.'
-              });
-            }
-
-            // Preparar dados do usuário para sessão
-            const sessionUser: User = {
-              id: account.id,
-              username: account.username,
-              email: account.email,
-              role: account.role,
-              isActive: account.isActive,
-              lastLogin: account.lastLogin || new Date(),
-              createdAt: account.createdAt,
-              updatedAt: account.updatedAt
-            };
-
-            // Atualizar sessão e último login
-            (request.session as any).user = sessionUser;
-            
-            try {
-              // Atualizar último login no banco de dados
-              await prisma.account.update({
-                where: { id: account.id },
-                data: { lastLogin: new Date() }
-              });
-
-              logger.info('Login realizado com sucesso', {
-                username: account.username,
-                userId: account.id
-              });
-
-              // Redirecionar para dashboard
-              return reply.redirect('/dashboard');
-            } catch (updateError) {
-              logger.error('Erro ao atualizar último login', {
-                error: updateError instanceof Error ? updateError.message : 'Erro desconhecido',
-                username: account.username
-              });
-
-              // Mesmo com erro no update, redirecionar
-              return reply.redirect('/dashboard');
-            }
-          });
-        });
-      } catch (error) {
-        logger.error('Erro crítico na rota de login', {
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
-          stack: error instanceof Error ? error.stack : 'Sem stack trace',
-          url: request.url,
-          method: request.method
-        });
-
-        return reply.status(500).view('pages/error', {
-          title: 'Erro Interno',
-          message: 'Ocorreu um erro durante o login. Tente novamente.'
-        });
-      }
-    }
-  );
 
   // Rota para exibir perfil do usuário
   fastify.get('/profile', 
@@ -275,7 +252,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           });
         }
 
-        return reply.view('pages/profile', {
+        return renderPage(reply, 'profile', {
           title: 'Meu Perfil',
           account: account,
           player: account.Player
@@ -331,11 +308,11 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           updatedAt: new Date()
         };
 
-        (request.session as any).user = updatedSessionUser;
+        request.session.user = updatedSessionUser;
 
         logger.info(`Perfil atualizado: ${user.username}`);
 
-        return reply.view('pages/profile', {
+        return renderPage(reply, 'profile', {
           title: 'Meu Perfil',
           account: updatedAccount,
           player: updatedAccount.Player,
@@ -348,6 +325,46 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           title: 'Erro',
           message: 'Erro interno ao atualizar perfil'
         });
+      }
+    }
+  );
+
+  // Rota de recuperação de senha
+  fastify.post('/recover-password', 
+    { 
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            email: { type: 'string', format: 'email' }
+          },
+          required: ['email']
+        }
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { email } = request.body as { email: string };
+
+      try {
+        const user = await prisma.account.findUnique({
+          where: { email },
+          include: {
+            Player: true
+          }
+        });
+
+        if (!user) {
+          return sendResponse(reply, 404, 'Usuário não encontrado');
+        }
+
+        // Enviar e-mail de recuperação de senha
+        const recoveryToken = await AuthService.generateRecoveryToken(user);
+        await AuthService.sendRecoveryEmail(user, recoveryToken);
+
+        return sendResponse(reply, 200, 'E-mail de recuperação de senha enviado com sucesso');
+      } catch (error) {
+        logger.error('Erro ao enviar e-mail de recuperação de senha:', error);
+        return sendResponse(reply, 500, 'Erro interno ao enviar e-mail de recuperação de senha');
       }
     }
   );

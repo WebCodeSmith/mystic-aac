@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import fastify, { FastifyInstance } from 'fastify';
+import fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import fastifySession from '@fastify/session';
@@ -23,6 +23,12 @@ import newsRoutes from './routes/news';
 import authRoutes from './routes/auth';
 import accountRoutes from './routes/account';
 
+function getSessionUser(request: FastifyRequest): any | undefined {
+    return request.session && typeof request.session === 'object' 
+        ? (request.session as any).user 
+        : undefined;
+}
+
 export class Server {
   private readonly app: FastifyInstance;
   private readonly configService: ConfigService;
@@ -40,7 +46,7 @@ export class Server {
     // Criar instância do Fastify
     this.app = fastify({
       logger: {
-        level: this.configService.isProduction() ? 'warn' : 'info',
+        level: process.env.LOGGING_LEVEL || 'info',
         transport: !this.configService.isProduction() ? {
           target: 'pino-pretty',
           options: {
@@ -112,10 +118,21 @@ export class Server {
     await this.app.register(fastifySession, sessionOptions);
 
     this.app.addHook('onRequest', globalLogger);
+    this.app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = getSessionUser(request);
+      reply.locals = { user };
+    });
     await this.app.register(rateLimit, apiLimiter);
-    await this.app.register(rateLimit, loginLimiter);
   }
 
+  /**
+   * Register routes for the Fastify app.
+   *
+   * This method registers the root route without a prefix, and then registers
+   * the other routes with their respective prefixes.
+   *
+   * @returns {Promise<void>} A promise that resolves when the routes are registered.
+   */
   private async registerRoutes() {
     // Registrar rota raiz sem prefixo
     await this.app.register(authRoutes);

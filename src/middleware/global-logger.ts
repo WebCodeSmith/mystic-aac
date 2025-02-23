@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import logger from '../config/logger';
-import { User } from '../types/express-session';
+import { User } from '../types/fastify-session';
 
 export async function globalLogger(
   request: FastifyRequest, 
@@ -22,8 +22,12 @@ export async function globalLogger(
     timestamp: new Date().toISOString()
   };
 
+  const logLevel = process.env.LOGGING_LEVEL || 'info';
+
   // Log de informações da requisição
-  request.log.info(JSON.stringify(logData));
+  if (logLevel !== 'error') {
+    request.log.info(JSON.stringify(logData));
+  }
 
   // Monitorar tempo de resposta
   const start = Date.now();
@@ -33,11 +37,13 @@ export async function globalLogger(
     const duration = Date.now() - start;
     
     // Log de conclusão da requisição
-    request.log.info(JSON.stringify({
-      ...logData,
-      status: reply.statusCode,
-      responsetime: `${duration}ms`
-    }));
+    if (logLevel !== 'error') {
+      request.log.info(JSON.stringify({
+        ...logData,
+        status: reply.statusCode,
+        responsetime: `${duration}ms`
+      }));
+    }
   });
 }
 

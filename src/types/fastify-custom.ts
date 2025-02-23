@@ -1,6 +1,7 @@
+// Este arquivo foi renomeado para fastify-custom.ts
 import { FastifyRequest } from 'fastify';
 import '@fastify/session';
-import { UserSession } from './express-session';
+import { UserSession } from './fastify-session';
 
 export type AuthenticatedRequest = FastifyRequest & {
   session: {

@@ -2,6 +2,7 @@ import prisma from './prisma';
 import * as bcrypt from 'bcrypt';
 import * as z from 'zod';
 import logger from '../config/logger';
+import * as crypto from 'crypto';
 
 // Esquemas de validação
 export const LoginSchema = z.object({
@@ -80,41 +81,68 @@ export class AuthService {
       throw new Error('Conta não encontrada');
     }
 
-    // TODO: Implementar geração de token de recuperação
-    // Gerar token, enviar e-mail, etc.
+    const token = await AuthService.generateRecoveryToken(account);
+    await AuthService.sendRecoveryEmail(account, token);
+
     return true;
   }
 
-  static async createAccount(data: z.infer<typeof CreateAccountSchema>) {
-    const { username, email, password, confirmPassword } = data;
-
-    if (password !== confirmPassword) {
-      throw new Error('Senhas não coincidem');
-    }
-
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        OR: [
-          { username: username.toLowerCase() },
-          { email: email.toLowerCase() }
-        ]
-      }
-    });
-
-    if (existingAccount) {
-      throw new Error('Usuário ou e-mail já cadastrado');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    return prisma.account.create({
+  static async generateRecoveryToken(user: any): Promise<string> {
+    // Gerar um token único para recuperação de senha
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Salvar o token no banco de dados com expiração
+    await prisma.PasswordReset.create({
       data: {
-        username: username.toLowerCase(),
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        role: 'USER',
-        isActive: true
+        accountId: user.id,
+        token,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas
       }
     });
+
+    return token;
+  }
+
+  static async sendRecoveryEmail(user: any, token: string): Promise<void> {
+    // TODO: Implementar o envio real de e-mail
+    logger.info(`[MOCK] E-mail de recuperação enviado para ${user.email} com token: ${token}`);
+  }
+
+  static async createAccount(data: z.infer<typeof CreateAccountSchema>) {
+    try {
+      const { username, email, password, confirmPassword } = data;
+
+      if (password !== confirmPassword) {
+        throw new Error('Senhas não coincidem');
+      }
+
+      const existingAccount = await prisma.account.findFirst({
+        where: {
+          OR: [
+            { username: username.toLowerCase() },
+            { email: email.toLowerCase() }
+          ]
+        }
+      });
+
+      if (existingAccount) {
+        throw new Error('Usuário ou e-mail já cadastrado');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      return await prisma.account.create({
+        data: {
+          username: username.toLowerCase(),
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          role: 'USER',
+          isActive: true
+        }
+      });
+    } catch (error: unknown) {
+      logger.error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      throw new Error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
   }
 }
