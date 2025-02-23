@@ -3,15 +3,23 @@
 <div class="dashboard-container">
     <div class="dashboard-sidebar">
         <div class="dashboard-profile">
-            <img src="<%= player && player.avatar ? player.avatar : '/images/default-avatar.png' %>" alt="Avatar" class="dashboard-profile-image">
-            <div class="dashboard-profile-name"><%= player ? player.name : user.username %></div>
-            <div class="dashboard-profile-level">
-                <% if (player) { %>
-                    Nível <%= player.level || 1 %> | <%= player.vocation %>
-                <% } else { %>
+            <% if (player) { %>
+                <img src="<%= player && player.avatar ? player.avatar : '/images/default-avatar.png' %>" alt="Avatar" class="dashboard-profile-image">
+                <div class="dashboard-profile-name"><%= player ? player.name : user.username %></div>
+                <div class="dashboard-profile-level">
+                    <% if (player) { %>
+                        Nível <%= player.level || 1 %> | <%= player.vocation %>
+                    <% } else { %>
+                        Nível 1
+                    <% } %>
+                </div>
+            <% } else { %>
+                <img src="/images/default-avatar.png" alt="Avatar" class="dashboard-profile-image">
+                <div class="dashboard-profile-name"><%= user.username %></div>
+                <div class="dashboard-profile-level">
                     Nível 1
-                <% } %>
-            </div>
+                </div>
+            <% } %>
         </div>
 
         <ul class="dashboard-menu">
@@ -81,12 +89,27 @@
                 </div>
             </div>
             <div class="character-list">
-                <% if (player) { %>
-                <div class="character-card">
-                    <img src="/images/character-knight.png" alt="Personagem" class="character-card-image">
-                    <div class="character-card-name"><%= player.name %></div>
-                    <div class="character-card-details"><%= player.vocation %> | Nível <%= player.level %> | <%= player.experience.toLocaleString() %> EXP</div>
-                </div>
+                <% if (players && players.length > 0) { %>
+                    <% players.forEach(function(character) { %>
+                        <div class="character-card">
+                            <div class="character-card-name"><%= character.name %></div>
+                            <div class="character-card-details">
+                                <%= character.vocation %> | Nível <%= character.level %> | <%= character.experience.toLocaleString() %> EXP
+                            </div>
+                            <div class="character-stats">
+                                <div class="stat">
+                                    <i class="fas fa-heart"></i> HP: <%= character.health %>/<%= character.healthmax %>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-fire-alt"></i> MP: <%= character.mana %>/<%= character.manamax %>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="no-characters">
+                        <p>Você ainda não tem personagens. Crie seu primeiro personagem!</p>
+                    </div>
                 <% } %>
             </div>
         </div>

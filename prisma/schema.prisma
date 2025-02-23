@@ -20,6 +20,7 @@ model account {
   passwordreset passwordreset[]
   player        player[]        
   news          news[]          @relation("AuthorNews") 
+  character     character[]
 }
 
 model character {
@@ -29,6 +30,8 @@ model character {
   vocation  String
   createdAt DateTime @default(now())
   updatedAt DateTime
+  accountId  Int
+  account    account  @relation(fields: [accountId], references: [id])
 }
 
 model news {

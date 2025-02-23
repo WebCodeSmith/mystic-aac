@@ -146,6 +146,24 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
         const user = request.session.user;
 
+        // Buscar a lista completa de personagens
+        const players = await prisma.player.findMany({
+          where: { accountId: user.id },
+          select: {
+            id: true,
+            name: true,
+            vocation: true,
+            sex: true,
+            world: true,
+            level: true,
+            experience: true,
+            health: true,
+            healthmax: true,
+            mana: true,
+            manamax: true
+          }
+        });
+
         // Buscar o jogador
         const player = await prisma.player.findFirst({
           where: { accountId: user.id }
@@ -173,7 +191,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
           title: 'Painel do Jogador',
           user,
           player,
-          news
+          players,
+          news,
+          serverName: configService.get('serverName') || 'Mystic AAC'
         });
       } catch (error) {
         // Verificar se o erro é uma instância de Error

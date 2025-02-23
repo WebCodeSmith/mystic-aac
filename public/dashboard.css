@@ -156,51 +156,93 @@
     color: #999;
 }
 
-.btn-primary {
-    background-color: var(--accent-color);
-    color: var(--primary-bg);
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: opacity 0.3s ease;
-}
-
-.btn-primary:hover {
-    opacity: 0.9;
-}
-
 .character-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Adicionando rolagem vertical */
+    max-height: 300px; /* Definindo altura máxima para mostrar apenas 3 personagens */
+    padding: 1rem;
+    gap: 1rem;
 }
 
 .character-card {
+    min-width: 200px; /* Definindo uma largura mínima para os cards */
     background-color: var(--primary-bg);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 15px;
-    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
 }
 
 .character-card-image {
-    width: 100px;
-    height: 100px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
 }
 
 .character-card-name {
-    color: var(--accent-color);
-    font-size: 16px;
-    margin-bottom: 5px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #FFD700; /* Cor dourada para o nome do personagem */
+    margin-bottom: 0.5rem;
 }
 
 .character-card-details {
-    color: var(--text-color);
-    font-size: 12px;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.character-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat i {
+    color: #e74c3c;
+}
+
+.stat i.fa-fire-alt {
+    color: #3498db;
+}
+
+.no-characters {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+}
+
+.dashboard-card-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: #2980b9;
 }
 
 .news-item {
