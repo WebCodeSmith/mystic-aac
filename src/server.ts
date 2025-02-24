@@ -9,7 +9,7 @@ import formBody from '@fastify/formbody';
 import cookie from '@fastify/cookie';
 import view from '@fastify/view';
 import rateLimit from '@fastify/rate-limit';
-import * as ejs from 'ejs';
+import ejs from 'ejs';
 import path from 'path';
 import Redis from 'ioredis';
 import { Prisma, PrismaClient } from '@prisma/client';

@@ -57,20 +57,13 @@
             %>
                 <div class="news-item">
                     <div class="news-header">
-                        <span class="news-date"><%= formatDate(newsItem.date) %></span>
                         <h3><%= newsItem.title %></h3>
+                        <span class="news-date"><%= formatDate(newsItem.date) %></span>
                     </div>
                     <p class="news-summary"><%= newsItem.summary %></p>
                     <div class="news-footer">
-                        <a href="#" class="btn-read-more" 
-                           data-news-id="<%= newsItem.id %>" 
-                           data-news-title="<%= newsItem.title %>"
-                           data-news-date="<%= formatDate(newsItem.date) %>"
-                           data-news-content="<%= newsItem.content %>"
-                           data-news-author="<%= newsItem.author?.username || 'Sistema' %>">
-                            <i class="fas fa-book-open"></i>
-                            Leia mais
-                        </a>
+                        <span class="news-author">Por <%= newsItem.author ? newsItem.author.username : 'Autor Desconhecido' %></span>
+                        <a href="/news/<%= newsItem.id %>" class="read-more">Leia mais</a>
                     </div>
                 </div>
             <% 
@@ -85,70 +78,121 @@
     </div>
 
     <div class="featured-section animate__animated animate__zoomIn">
-        <div class="featured-title">
-            <h2>
-                <i class="fas fa-star"></i>
-                Destaque do Servidor
-            </h2>
-        </div>
         <div class="featured-content">
+            <h3 class="featured-title">Destaques<span class="highlight-yellow"></span> do Servidor</h3>
+            <p class="featured-summary">Descubra as últimas atualizações e eventos incríveis!</p>
+            
             <div class="featured-highlights">
                 <div class="featured-highlight-item">
-                    <i class="fas fa-users-cog"></i>
-                    <h4>Sistema de Progressão</h4>
-                    <span class="highlight-text">Novo sistema de progressão de personagens com recompensas únicas</span>
+                    <span class="highlight-text">Novo sistema de progressão de personagens</span>
                 </div>
                 <div class="featured-highlight-item">
-                    <i class="fas fa-calendar-star"></i>
-                    <h4>Eventos Semanais</h4>
-                    <span class="highlight-text">Eventos semanais com recompensas exclusivas e desafios emocionantes</span>
+                    <span class="highlight-text">Novos Eventos semanais com recompensas exclusivas</span>
                 </div>
                 <div class="featured-highlight-item">
-                    <i class="fas fa-swords"></i>
-                    <h4>Sistema de Combate</h4>
-                    <span class="highlight-text">Novo sistema de combate e habilidades para maior imersão</span>
+                    <span class="highlight-text">Novo sistema de combate e habilidades</span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="content-section">
-        <div class="section-grid">
-            <!-- Top Players -->
-            <div class="top-players-section">
-                <h2 class="section-title">
-                    <i class="fas fa-trophy"></i> Top Players
-                </h2>
-                <div class="top-players-list">
-                    <% if (topPlayers && topPlayers.length > 0) { %>
-                        <% topPlayers.forEach((player, index) => { %>
-                            <div class="player-card <%= index < 3 ? `top-${index + 1}` : '' %>">
-                                <div class="player-rank">#<%= index + 1 %></div>
-                                <div class="player-info">
-                                    <div class="player-name"><%= player.name %></div>
-                                    <div class="player-details">
-                                        Level <%= player.level %> | <%= player.vocation %>
-                                    </div>
-                                </div>
-                                <div class="player-exp">
-                                    <%= player.experience.toLocaleString() %> EXP
-                                </div>
-                            </div>
-                        <% }); %>
-                    <% } else { %>
-                        <p class="no-players">Nenhum jogador encontrado.</p>
-                    <% } %>
+
+    <style>
+    .featured-section {
+        background-color: var(--primary-color);
+        padding: 40px 0;
+        text-align: center;
+    }
+
+    .featured-content {
+        max-width: 800px;
+        margin: 0 auto;
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .featured-title {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .highlight-yellow {
+        color: var(--accent-color);
+        font-weight: bold;
+    }
+
+    .featured-summary {
+        font-size: 1.1rem;
+        opacity: 0.8;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .featured-highlights {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .featured-highlight-item {
+        width: 100%;
+        padding: 10px;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 5px;
+        text-align: center;
+    }
+
+    .highlight-text {
+        font-size: 1rem;
+        opacity: 0.9;
+        display: block;
+    }
+    </style>
+
+    <div class="players-section animate__animated animate__fadeInUp">
+        <div class="section-header">
+            <h2><i class="fas fa-trophy"></i> Top Players</h2>
+        </div>
+        <div class="players-grid">
+            <% 
+            // Renderizar top players
+            if (typeof topPlayers !== 'undefined' && topPlayers.length > 0) {
+                topPlayers.forEach(function(player, index) { 
+            %>
+                <div class="player-card hover-grow">
+                    <div class="player-rank">#<%= index + 1 %></div>
+                    <div class="player-avatar">
+                        <img src="<%= player.avatar || '/images/default-avatar.png' %>" alt="Avatar de <%= player.name %>">
+                    </div>
+                    <div class="player-info">
+                        <h3 class="player-name"><%= player.name %></h3>
+                        <div class="player-details">
+                            <span class="player-level">Nível <%= player.level %></span>
+                            <span class="player-vocation"><%= player.vocation %></span>
+                            <span class="player-username">@<%= player.username %></span>
+                        </div>
+                        <div class="player-xp">
+                            <i class="fas fa-star"></i> <%= player.experience.toLocaleString('pt-BR') %> XP
+                        </div>
+                    </div>
                 </div>
-                <!-- Movido para fora do top-players-list -->
-                <div class="view-all">
-                    <a href="/highscores" class="btn-ranking">
-                        <i class="fas fa-trophy"></i>
-                        Ver Ranking Completo
-                    </a>
+            <% 
+                });
+            } else { 
+            %>
+                <div class="no-players">
+                    <p>Nenhum jogador encontrado.</p>
                 </div>
-            </div>
+            <% } %>
         </div>
     </div>
 </div>
+
 <%- include('../partials/footer') %>
 
 <script src="/js/home.min.js" defer></script>

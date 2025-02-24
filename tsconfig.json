@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
+    "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -16,25 +16,20 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "types": [
-      "node",
-      "ejs"
+      "node"
     ],
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
     ],
     "paths": {
-      "bcrypt": ["./src/types/bcrypt.d.ts"],
-      "ejs": ["./node_modules/@types/ejs"],
-      "*": ["node_modules/*", "src/config/*"]
-    },
-    "baseUrl": "."
+      "bcrypt": ["./src/types/bcrypt.d.ts"]
+    }
   },
   "include": [
     "src/**/*.ts",
-    "src/types/**/*.d.ts",
-    "src/config/**/*.ts"
-, "src/config/tailwind.config.ts"  ],
+    "src/types/**/*.d.ts"
+  ],
   "exclude": [
     "node_modules",
     "**/*.spec.ts"

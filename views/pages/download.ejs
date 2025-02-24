@@ -1,50 +1,49 @@
-<%- include('../partials/head', { title: 'Download', extraCSS: '/download.css' }) %>
+<%- include('../partials/head') %>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/download.css">
 
-<div class="home-container">
-    <div class="download-section animate__animated animate__fadeIn">
-        <div class="download-title">
-            <h2>
-                <i class="fas fa-download"></i>
-                Download do Cliente
-            </h2>
+<div class="content-wrapper">
+    <div class="download-container">
+        <div class="download-header">
+            <h1>Download Game</h1>
+            <p>Download the game client and start your adventure!</p>
         </div>
 
         <div class="download-grid">
             <div class="download-card">
                 <div class="download-icon">
-                    <i class="fas fa-desktop"></i>
-                </div>
-                <h3>Cliente Windows</h3>
-                <p class="download-description">
-                    Cliente otimizado para Windows com suporte total a todas as funcionalidades do servidor.
-                </p>
-                <div class="download-info">
-                    <span><i class="fas fa-file-archive"></i> 150 MB</span>
-                    <span><i class="fas fa-windows"></i> Windows 7+</span>
-                </div>
-                <a href="/downloads/windows-client.zip" class="btn-download">
                     <i class="fas fa-download"></i>
-                    Download Windows
+                </div>
+                <h2>Game Client</h2>
+                <p>Latest version: 12.0</p>
+                <p>Size: 150MB</p>
+                <a href="/downloads/client.zip" class="download-button">
+                    Download Client
                 </a>
             </div>
 
             <div class="download-card">
                 <div class="download-icon">
-                    <i class="fab fa-linux"></i>
+                    <i class="fas fa-book"></i>
                 </div>
-                <h3>Cliente Linux</h3>
-                <p class="download-description">
-                    Versão do cliente compatível com sistemas Linux, testado em Ubuntu e derivados.
-                </p>
-                <div class="download-info">
-                    <span><i class="fas fa-file-archive"></i> 145 MB</span>
-                    <span><i class="fab fa-linux"></i> Linux</span>
-                </div>
-                <a href="/downloads/linux-client.tar.gz" class="btn-download">
-                    <i class="fas fa-download"></i>
-                    Download Linux
+                <h2>Installation Guide</h2>
+                <p>Learn how to install</p>
+                <p>PDF Format</p>
+                <a href="/downloads/guide.pdf" class="download-button">
+                    Download Guide
                 </a>
             </div>
+        </div>
+
+        <div class="system-requirements">
+            <h3>System Requirements</h3>
+            <ul>
+                <li>OS: Windows 7 or higher</li>
+                <li>CPU: 1.5 GHz or higher</li>
+                <li>RAM: 1 GB</li>
+                <li>Graphics: DirectX 9 compatible</li>
+                <li>Storage: 500 MB available space</li>
+            </ul>
         </div>
     </div>
 </div>
