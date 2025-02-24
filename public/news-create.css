@@ -1,151 +1,159 @@
-/* Estilos específicos para a página de criação de notícias */
-
-.content-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 100px);
-    background-color: var(--background-color);
-    padding: 20px;
-    width: 100%;
+:root {
+  --primary-black: #000000;
+  --primary-yellow: #ffd700;
+  --secondary-yellow: #ffb700;
+  --dark-gray: #1a1a1a;
+  --light-gray: #333333;
+  --text-white: #ffffff;
+  --text-yellow: #ffd700;
+  --border-yellow: #ffb700;
+  --shadow-dark: rgba(0, 0, 0, 0.5);
 }
 
-.news-create-section {
-    width: 100%;
-    max-width: 700px;
-    background-color: transparent;
+.news-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  background: var(--dark-gray);
+  border: 2px solid var(--border-yellow);
+  border-radius: 8px;
+  box-shadow: 0 0 20px var(--shadow-dark);
 }
 
-.news-create-card {
-    background-color: var(--secondary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
+.news-header {
+  background: var(--primary-black);
+  color: var(--text-yellow);
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-yellow);
+  text-align: center;
+  border-radius: 6px 6px 0 0;
 }
 
-.card-header {
-    background-color: var(--primary-color);
-    color: var(--accent-color);
-    padding: 20px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
+.news-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  text-shadow: 0 0 10px var(--primary-yellow);
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
-.card-title {
-    margin: 0;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-title i {
-    margin-right: 10px;
-}
-
-.card-subtitle {
-    color: var(--text-color);
-    opacity: 0.7;
-    margin-top: 10px;
-    font-size: 0.9rem;
-}
-
-.card-body {
-    padding: 30px;
+.news-form {
+  padding: 2rem;
+  background: var(--light-gray);
 }
 
 .form-group {
-    margin-bottom: 25px;
+  margin-bottom: 1.5rem;
 }
 
 .form-label {
-    color: var(--accent-color);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-}
-
-.form-label i {
-    margin-right: 10px;
-    color: var(--accent-color);
-}
-
-.input-wrapper {
-    position: relative;
+  display: block;
+  color: var(--text-yellow);
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
 }
 
 .form-control {
-    background-color: var(--primary-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    transition: all 0.3s ease;
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid var(--border-yellow);
+  border-radius: 4px;
+  background: var(--dark-gray);
+  color: var(--text-white);
+  font-size: 1rem;
+  transition: all 0.3s ease;
 }
 
 .form-control:focus {
-    background-color: var(--primary-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25);
-    color: var(--text-color);
+  outline: none;
+  border-color: var(--primary-yellow);
+  box-shadow: 0 0 10px var(--primary-yellow);
 }
 
-.input-counter {
-    position: absolute;
-    bottom: 10px;
-    right: 15px;
-    color: var(--text-color);
-    opacity: 0.6;
-    font-size: 0.8rem;
+textarea.form-control {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.char-counter {
+  display: block;
+  text-align: right;
+  color: var(--text-yellow);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
 }
 
 .form-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
-.btn-primary, .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 48%;
-    padding: 12px;
-    transition: all 0.3s ease;
+.btn {
+  padding: 0.8rem 1.5rem;
+  border: 2px solid var(--border-yellow);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  text-transform: uppercase;
 }
 
 .btn-primary {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-    color: var(--primary-color);
+  background: var(--primary-yellow);
+  color: var(--primary-black);
 }
 
 .btn-secondary {
-    background-color: var(--primary-color);
-    border-color: var(--border-color);
-    color: var(--text-color);
+  background: var(--primary-black);
+  color: var(--text-yellow);
 }
 
-.btn-primary i, .btn-secondary i {
-    margin-right: 8px;
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px var(--primary-yellow);
 }
 
-.btn-primary:hover, 
+.btn-primary:hover {
+  background: var(--secondary-yellow);
+}
+
 .btn-secondary:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
+  background: var(--light-gray);
+}
+
+.alert {
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  border: 1px solid transparent;
+}
+
+.alert-success {
+  background: var(--dark-gray);
+  color: #00ff00;
+  border-color: #00ff00;
+}
+
+.alert-danger {
+  background: var(--dark-gray);
+  color: #ff0000;
+  border-color: #ff0000;
 }
 
 @media (max-width: 768px) {
-    .card-body {
-        padding: 20px;
-    }
+  .news-container {
+    margin: 1rem;
+  }
 
-    .form-actions {
-        flex-direction: column;
-    }
+  .form-actions {
+    flex-direction: column;
+  }
 
-    .btn-primary, .btn-secondary {
-        width: 100%;
-        margin-bottom: 15px;
-    }
+  .btn {
+    width: 100%;
+  }
 }

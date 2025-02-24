@@ -1,105 +1,83 @@
 <%- include('../partials/head', { title }) %>
+<link rel="stylesheet" href="/news-create.css">
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <h1>Criar Nova Notícia</h1>
-            
-            <% if (error) { %>
-                <div class="alert alert-danger">
-                    <%= error %>
-                </div>
-            <% } %>
-
-            <% if (success) { %>
-                <div class="alert alert-success">
-                    <%= success %>
-                </div>
-            <% } %>
-
-            <div class="card">
-                <div class="card-body">
-                    <form 
-                        id="newsForm" 
-                        action="/news/create" 
-                        method="POST"
-                    >
-                        <div class="form-group">
-                            <label for="title">Título</label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="title" 
-                                name="title" 
-                                required 
-                                minlength="3" 
-                                maxlength="100"
-                                placeholder="Digite um título com pelo menos 3 caracteres"
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="summary">Resumo</label>
-                            <textarea 
-                                class="form-control" 
-                                id="summary" 
-                                name="summary" 
-                                rows="3" 
-                                required 
-                                minlength="10" 
-                                maxlength="255"
-                                placeholder="Escreva um resumo com pelo menos 10 caracteres"
-                            ></textarea>
-                            <small class="form-text text-muted">Mínimo de 10 caracteres</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="content">Conteúdo</label>
-                            <textarea 
-                                class="form-control" 
-                                id="content" 
-                                name="content" 
-                                rows="10" 
-                                required 
-                                minlength="10"
-                                placeholder="Escreva o conteúdo completo da notícia"
-                            ></textarea>
-                            <small class="form-text text-muted">Mínimo de 10 caracteres</small>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">
-                            Criar Notícia
-                        </button>
-                        <a href="/dashboard" class="btn btn-secondary">Cancelar</a>
-                    </form>
-                </div>
-            </div>
-        </div>
+<div class="news-container">
+    <div class="news-header">
+        <h1><%= isEditing ? 'Editar Notícia' : 'Criar Nova Notícia' %></h1>
     </div>
+
+    <% if (error) { %>
+        <div class="alert alert-danger">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <% if (success) { %>
+        <div class="alert alert-success">
+            <%= success %>
+        </div>
+    <% } %>
+
+        <form class="news-form" 
+        action="<%= isEditing ? `/news/edit/${news.id}` : '/news/create' %>" 
+        method="POST">
+        <% if (isEditing) { %>
+        <input type="hidden" name="_method" value="PUT">
+        <% } %>
+        <div class="form-group">
+            <label class="form-label" for="title">Título</label>
+            <input 
+                type="text" 
+                class="form-control" 
+                id="title" 
+                name="title" 
+                required 
+                minlength="3" 
+                maxlength="100"
+                value="<%= isEditing ? news.title : '' %>"
+                placeholder="Digite o título da notícia"
+            >
+            <span class="char-counter"><%= isEditing ? news.title.length : 0 %>/100</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="summary">Resumo</label>
+            <textarea 
+                class="form-control" 
+                id="summary" 
+                name="summary" 
+                required 
+                minlength="10" 
+                maxlength="255"
+                placeholder="Digite um breve resumo da notícia"
+                rows="3"
+            ><%= isEditing ? news.summary : '' %></textarea>
+            <span class="char-counter"><%= isEditing ? news.summary.length : 0 %>/255</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="content">Conteúdo</label>
+            <textarea 
+                class="form-control" 
+                id="content" 
+                name="content" 
+                required 
+                minlength="10"
+                placeholder="Digite o conteúdo completo da notícia"
+                rows="10"
+            ><%= isEditing ? news.content : '' %></textarea>
+            <span class="char-counter"><%= isEditing ? news.content.length : 0 %> caracteres</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> <%= isEditing ? 'Salvar Alterações' : 'Criar Notícia' %>
+            </button>
+            <a href="/news" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const titleInput = document.getElementById('title');
-    const summaryInput = document.getElementById('summary');
-    const contentInput = document.getElementById('content');
-
-    function updateCharCount(input) {
-        input.addEventListener('input', function() {
-            const countElement = input.nextElementSibling || document.createElement('small');
-            countElement.classList.add('form-text', 'text-muted');
-            countElement.textContent = `${this.value.length} caracteres`;
-            
-            if (!countElement.parentNode) {
-                input.parentNode.appendChild(countElement);
-            }
-        });
-    }
-
-    updateCharCount(titleInput);
-    updateCharCount(summaryInput);
-    updateCharCount(contentInput);
-});
-</script>
 
 <%- include('../partials/footer') %>

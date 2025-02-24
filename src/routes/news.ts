@@ -80,6 +80,12 @@ export default async function newsRoutes(fastify: FastifyInstance) {
       return reply.view('pages/news-create', {
         title: 'Criar Notícia',
         user,
+        isEditing: false, // Adicionando isEditing como false
+        news: {           // Adicionando objeto news vazio
+          title: '',
+          summary: '',
+          content: ''
+        },
         error: null,
         success: null
       });
@@ -192,6 +198,99 @@ export default async function newsRoutes(fastify: FastifyInstance) {
       return reply.send(news);
     } catch (error) {
       return sendError(reply, 500, 'Erro ao buscar detalhes da notícia', 
+        error instanceof Error ? error.message : 'Erro desconhecido');
+    }
+  });
+
+  // Add Edit News Form Route
+  fastify.get<{ Params: { id: string } }>('/edit/:id', {
+    preHandler: [requireAuth, requireAdmin]
+  }, async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      const newsId = parseInt(id, 10);
+
+      if (isNaN(newsId)) {
+        return sendError(reply, 400, 'ID inválido', 'O ID da notícia deve ser um número válido');
+      }
+
+      const news = await prisma.news.findUnique({
+        where: { id: newsId },
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          content: true,
+          date: true,
+          author: {
+            select: {
+              username: true
+            }
+          }
+        }
+      });
+
+      if (!news) {
+        return sendError(reply, 404, 'Notícia não encontrada', 
+          'A notícia que você tentou editar não existe');
+      }
+
+      // Mudança aqui: usando news-create.ejs ao invés de news-edit.ejs
+      return reply.view('pages/news-create', {
+        title: 'Editar Notícia',
+        news, // Passando a notícia para o template
+        isEditing: true, // Flag para identificar que é edição
+        error: null,
+        success: null
+      });
+    } catch (error) {
+      return sendError(reply, 500, 'Erro ao carregar formulário', 
+        'Não foi possível carregar o formulário de edição');
+    }
+  });
+
+  // Add Update News Route
+  fastify.post<{ 
+    Params: { id: string },
+    Body: z.infer<typeof newsSchema>
+  }>('/edit/:id', {
+    preHandler: [requireAuth, requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['title', 'summary', 'content'],
+        properties: {
+          title: { type: 'string', minLength: 3, maxLength: 100 },
+          summary: { type: 'string', minLength: 10, maxLength: 255 },
+          content: { type: 'string', minLength: 10 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { title, summary, content } = request.body;
+
+    try {
+      const newsId = parseInt(id, 10);
+
+      if (isNaN(newsId)) {
+        return sendError(reply, 400, 'ID inválido', 'O ID da notícia deve ser um número válido');
+      }
+
+      const updatedNews = await prisma.news.update({
+        where: { id: newsId },
+        data: {
+          title,
+          summary,
+          content,
+          updatedAt: new Date()
+        }
+      });
+
+      return reply.redirect(`/news/${updatedNews.id}?success=updated`);
+    } catch (error) {
+      return sendError(reply, 500, 'Erro ao atualizar notícia', 
         error instanceof Error ? error.message : 'Erro desconhecido');
     }
   });

@@ -33,8 +33,7 @@
   "include": [
     "src/**/*.ts",
     "src/types/**/*.d.ts",
-    "src/config/**/*.ts"
-, "src/config/tailwind.config.ts"  ],
+    "src/config/**/*.ts"],
   "exclude": [
     "node_modules",
     "**/*.spec.ts"
