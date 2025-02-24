@@ -7,9 +7,9 @@ import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
 import { ConfigService } from '../services/config.service';
 import { renderPage } from '../utils/render-helper';
-import { Vocation, getVocationName } from '../config/config';  // Adicione esta importação no topo
+import { Vocation, getVocationName } from '../config/config';
 
-// Interface para notícia
+// News interface
 interface NewsItem {
   id: number;
   title: string;
@@ -23,7 +23,7 @@ interface NewsItem {
 }
 
 // Constantes
-const ONLINE_PLAYERS_COUNT = 42; // Substituir por valor real/dinâmico
+const ONLINE_PLAYERS_COUNT = 42; // Replace with real/dynamic value
 
 // Renderização consistente
 const renderPageWithOnlinePlayers = async (
@@ -33,10 +33,10 @@ const renderPageWithOnlinePlayers = async (
     title: string, 
     error?: string, 
     success?: string,
-    [key: string]: any  // Permitir propriedades adicionais
+    [key: string]: any  // Allow additional properties
   }
 ) => {
-  // Verificações de segurança
+  // Security checks
   if (!reply || !page) {
     logger.error('Parâmetros inválidos para renderização', { 
       reply: !!reply, 
@@ -45,27 +45,27 @@ const renderPageWithOnlinePlayers = async (
     return reply.status(500).send('Erro interno: Parâmetros de renderização inválidos');
   }
 
-  // Verificar se a resposta já foi enviada
+  // Check if the response has already been sent
   if (reply.sent) {
     logger.warn('Tentativa de renderizar página já enviada', { page });
     return reply;
   }
 
   try {
-    // Renderizar página com contagem de jogadores online
+    // Render page with online player count
     return renderPage(reply, page, { 
       ...options, 
       onlinePlayers: ONLINE_PLAYERS_COUNT 
     });
   } catch (error) {
-    // Log de erro detalhado
+    // Detailed error log
     logger.error('Erro ao renderizar página com jogadores online', {
       page,
       error: error instanceof Error ? error.message : 'Erro desconhecido',
       stack: error instanceof Error ? error.stack : 'Sem stack trace'
     });
 
-    // Garantir que apenas uma resposta seja enviada
+    // Ensure only one response is sent
     if (!reply.sent) {
       return reply.status(500).send('Erro interno ao renderizar página');
     }
@@ -74,7 +74,7 @@ const renderPageWithOnlinePlayers = async (
   }
 };
 
-// Schema para validação dos dados do personagem
+// Schema for validating character data
 const characterCreateSchema = z.object({
   name: z.string()
     .min(3, 'O nome deve ter pelo menos 3 caracteres')
@@ -85,19 +85,17 @@ const characterCreateSchema = z.object({
   world: z.string()
 });
 
-// Plugin de rotas de autenticação
+// Authentication Routes Plugin
 export default async function authRoutes(fastify: FastifyInstance) {
-  // Inicializar ConfigService
+  // Initialize ConfigService
   const configService = new ConfigService();
 
-  // Rota para a página inicial
+  // Route to home page
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Buscar as últimas notícias
+      // Search for the latest news
       const news = await prisma.news.findMany({
-        orderBy: {
-          date: 'desc'
-        },
+        orderBy: { date: 'desc' },
         take: 5,
         include: {
           author: {
@@ -109,8 +107,23 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Formatar as notícias para exibição
-      const formattedNews = (news as NewsItem[]).map(item => ({
+      // Search top players
+      const topPlayers = await prisma.player.findMany({
+        orderBy: [
+          { level: 'desc' },
+          { experience: 'desc' }
+        ],
+        take: 3, // limit to 3 players
+        select: {
+          name: true,
+          level: true,
+          vocation: true,
+          experience: true
+        }
+      });
+
+      // Format news and players
+      const formattedNews = news.map(item => ({
         id: item.id,
         title: item.title,
         summary: item.summary,
@@ -119,11 +132,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
         authorName: item.author?.username || 'Sistema'
       }));
 
+      const formattedPlayers = topPlayers.map(player => ({
+        ...player,
+        vocation: getVocationName(player.vocation)
+      }));
+
       const user = await getSessionUser(request);
       return reply.view('pages/index', {
         title: 'Início',
         user,
         news: formattedNews,
+        topPlayers: formattedPlayers,
         onlinePlayers: ONLINE_PLAYERS_COUNT,
         serverName: configService.get('serverName') || 'Mystic AAC'
       });
@@ -133,7 +152,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Rota de dashboard
+  // Route Dashboard
   fastify.get('/dashboard', 
     { 
       preHandler: [requireAuth] 
@@ -165,12 +184,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
           }
         });
 
-        // Buscar o jogador
+        // Search for player
         const player = await prisma.player.findFirst({
           where: { accountId: user.id }
         });
 
-        // Buscar as notícias
+        // Search for news
         const news = await prisma.news.findMany({
           orderBy: { date: 'desc' },
           take: 5,
@@ -194,18 +213,18 @@ export default async function authRoutes(fastify: FastifyInstance) {
           player,
           players,
           news,
-          getVocationName,  // Agora importada do config.ts
+          getVocationName,
           serverName: configService.get('serverName') || 'Mystic AAC'
         });
       } catch (error) {
-        // Verificar se o erro é uma instância de Error
+        // Check if error is an instance of Error
         const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
         logger.error('Erro ao acessar o dashboard', {
           error: errorMessage,
           stack: error instanceof Error ? error.stack : 'Sem stack trace'
         });
         
-        // Renderizar a página de erro
+        // Render the error page
         return reply.view('pages/error', { 
           title: 'Erro', 
           message: errorMessage || 'Ocorreu um erro inesperado.' 
@@ -214,7 +233,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Rota de logout
+  // Route Logout
   fastify.all('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.session.destroy();
@@ -222,22 +241,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Erro ao fazer logout', error);
       return reply.status(500).send('Erro ao fazer logout');
-    }
-  });
-
-  // Download route
-  fastify.get('/download', {
-    preHandler: [requireAuth]
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-        const user = await getSessionUser(request);
-        return renderPageWithOnlinePlayers(reply, 'download', {  // Removed 'pages/'
-            title: 'Download Game',
-            user
-        });
-    } catch (error) {
-        logger.error('Error accessing download page:', error);
-        return reply.status(500).send('Error loading download page');
     }
   });
 
@@ -258,7 +261,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Formata os dados dos jogadores com os nomes das vocações
+      // Formats player data with vocation names
       const formattedPlayers = topPlayers.map(player => ({
         ...player,
         vocation: getVocationName(player.vocation)
@@ -276,6 +279,23 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.status(500).view('pages/error', {
         title: 'Erro',
         message: 'Falha ao carregar ranking'
+      });
+    }
+  });
+
+  // Download Route
+  fastify.get('/download', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      return reply.view('pages/download', {
+        title: 'Download',
+        user: request.session?.user || null,
+        serverName: configService.get('serverName') || 'Mystic AAC'
+      });
+    } catch (error) {
+      logger.error('Erro ao acessar página de download:', error);
+      return reply.status(500).view('pages/error', {
+        title: 'Erro',
+        message: 'Erro ao carregar página de download'
       });
     }
   });
