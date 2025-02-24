@@ -93,13 +93,27 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Route to home page
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Fetch top players
+      // Search for the latest news
+      const news = await prisma.news.findMany({
+        orderBy: { date: 'desc' },
+        take: 5,
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true
+            }
+          }
+        }
+      });
+
+      // Search top players
       const topPlayers = await prisma.player.findMany({
         orderBy: [
           { level: 'desc' },
           { experience: 'desc' }
         ],
-        take: 3,
+        take: 3, // limit to 3 players
         select: {
           name: true,
           level: true,
@@ -108,28 +122,33 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
       });
 
-      // Format players data
+      // Format news and players
+      const formattedNews = news.map(item => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        content: item.content,
+        date: item.date,
+        authorName: item.author?.username || 'Sistema'
+      }));
+
       const formattedPlayers = topPlayers.map(player => ({
         ...player,
         vocation: getVocationName(player.vocation)
       }));
 
-      // Render page with data
+      const user = await getSessionUser(request);
       return reply.view('pages/index', {
         title: 'Início',
-        user: request.session?.user || null,
+        user,
+        news: formattedNews,
         topPlayers: formattedPlayers,
-        onlinePlayers: 0, // Add your online players count here
-        maxPlayers: 1000, // Add your max players count here
+        onlinePlayers: ONLINE_PLAYERS_COUNT,
         serverName: configService.get('serverName') || 'Mystic AAC'
       });
-
     } catch (error) {
-      logger.error('Error loading home page:', error);
-      return reply.status(500).view('pages/error', {
-        title: 'Erro',
-        message: 'Erro ao carregar página inicial'
-      });
+      logger.error('Erro ao renderizar página inicial:', error);
+      return reply.status(500).send('Erro ao carregar página inicial');
     }
   });
 
