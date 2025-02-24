@@ -1,31 +1,39 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '../services/prisma';
 import { z } from 'zod';
-import bcrypt from 'bcrypt';
 import { requireAuth } from '../middleware/auth-middleware';
-import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
 import { ConfigService, formatDateTime } from '../services/config.service';
-import { renderPage } from '../utils/render-helper';
-import { Vocation, getVocationName } from '../config/config';
+import { getVocationName } from '../config/config';
 
-// News interface
-interface NewsItem {
+// Types
+interface NewsAuthor {
+  id: number;
+  username: string;
+}
+
+interface FormattedNews {
   id: number;
   title: string;
   summary: string;
   content: string;
   date: Date;
-  author: {
-    id: number;
-    username: string;
-  } | null;
+  authorName: string;
 }
 
-// Constantes
-const ONLINE_PLAYERS_COUNT = 42; // Replace with real/dynamic value
+interface PlayerData {
+  name: string;
+  level: number;
+  vocation: number; // Mudado de string para number
+  experience: bigint; // Mudado de number para bigint
+}
 
-// Schema for validating character data
+// Constants
+const NEWS_LIMIT = 5;
+const TOP_PLAYERS_LIMIT = 3;
+const RANKING_LIMIT = 50;
+
+// Validation Schemas
 const characterCreateSchema = z.object({
   name: z.string()
     .min(3, 'O nome deve ter pelo menos 3 caracteres')
@@ -36,66 +44,71 @@ const characterCreateSchema = z.object({
   world: z.string()
 });
 
-// Authentication Routes Plugin
-export default async function authRoutes(fastify: FastifyInstance) {
-  // Initialize ConfigService
-  const configService = new ConfigService();
+// Helper Functions
+async function getLatestNews() {
+  return prisma.news.findMany({
+    orderBy: { date: 'desc' },
+    take: NEWS_LIMIT,
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true
+        }
+      }
+    }
+  });
+}
 
-  // Route to home page
+async function getTopPlayers(limit: number) {
+  return prisma.player.findMany({
+    orderBy: [
+      { level: 'desc' },
+      { experience: 'desc' }
+    ],
+    take: limit,
+    select: {
+      name: true,
+      level: true,
+      vocation: true,
+      experience: true
+    }
+  });
+}
+
+// Update the formatPlayers function
+function formatPlayers(players: PlayerData[]) {
+  return players.map(player => ({
+    ...player,
+    experience: Number(player.experience),
+    vocation: getVocationName(player.vocation)
+  }));
+}
+
+// Routes Plugin
+export default async function authRoutes(fastify: FastifyInstance) {
+  const configService = new ConfigService();
+  const serverName = configService.get('serverName') || 'Mystic AAC';
+
+  // Home Route
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Search for the latest news
-      const news = await prisma.news.findMany({
-        orderBy: { date: 'desc' },
-        take: 5,
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true
-            }
-          }
-        }
-      });
+      const [news, topPlayers] = await Promise.all([
+        getLatestNews(),
+        getTopPlayers(TOP_PLAYERS_LIMIT)
+      ]);
 
-      // Search top players
-      const topPlayers = await prisma.player.findMany({
-        orderBy: [
-          { level: 'desc' },
-          { experience: 'desc' }
-        ],
-        take: 3,
-        select: {
-          name: true,
-          level: true,
-          vocation: true,
-          experience: true
-        }
-      });
-
-      // Format news and players
       const formattedNews = news.map(item => ({
-        id: item.id,
-        title: item.title,
-        summary: item.summary,
-        content: item.content,
-        date: item.date,
+        ...item,
         authorName: item.author?.username || 'Sistema'
       }));
 
-      const formattedPlayers = topPlayers.map(player => ({
-        ...player,
-        vocation: getVocationName(player.vocation)
-      }));
-
-      // Use reply.view directly instead of renderPageWithOnlinePlayers
       return reply.view('pages/index', {
         title: 'Início',
         user: request.session?.user || null,
         news: formattedNews,
-        topPlayers: formattedPlayers,
-        onlinePlayers: ONLINE_PLAYERS_COUNT,
-        serverName: configService.get('serverName') || 'Mystic AAC'
+        topPlayers: formatPlayers(topPlayers),
+        serverName
       });
     } catch (error) {
       logger.error('Erro ao renderizar página inicial:', error);
@@ -106,83 +119,60 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Route Dashboard
+  // Dashboard Route
   fastify.get('/dashboard', 
-    { 
-      preHandler: [requireAuth] 
-    }, 
+    { preHandler: [requireAuth] }, 
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        // Garantir que o usuário existe na sessão
-        if (!request.session?.user?.id) {
-          return reply.redirect('/login');
-        }
-
-        const user = request.session.user;
-
-        // Buscar a lista completa de personagens
-        const players = await prisma.player.findMany({
-          where: { accountId: user.id },
-          select: {
-            id: true,
-            name: true,
-            vocation: true,
-            sex: true,
-            world: true,
-            level: true,
-            experience: true,
-            health: true,
-            healthmax: true,
-            mana: true,
-            manamax: true
-          }
-        });
-
-        // Search for player
-        const player = await prisma.player.findFirst({
-          where: { accountId: user.id }
-        });
-
-        // Search for news
-        const news = await prisma.news.findMany({
-          orderBy: { date: 'desc' },
-          take: 5,
-          select: {
-            id: true,
-            title: true,
-            summary: true,
-            date: true,
-            author: {
-              select: {
-                id: true,
-                username: true
-              }
+        const user = request.session?.user;
+        if (!user?.id) return reply.redirect('/login');
+  
+        // Buscar o primeiro personagem do usuário para usar como avatar
+        const [players, news, mainPlayer] = await Promise.all([
+          prisma.player.findMany({
+            where: { accountId: user.id },
+            select: {
+              id: true,
+              name: true,
+              vocation: true,
+              sex: true,
+              world: true,
+              level: true,
+              experience: true,
+              health: true,
+              healthmax: true,
+              mana: true,
+              manamax: true
             }
-          }
-        });
-
+          }),
+          getLatestNews(),
+          prisma.player.findFirst({
+            where: { accountId: user.id },
+            select: {
+              id: true,
+              name: true,
+              level: true,
+              vocation: true,
+              experience: true // Adicionando o campo experience
+            }
+          })
+        ]);
+  
         return reply.view('pages/dashboard', {
           title: 'Painel do Jogador',
           user,
-          player,
           players,
           news,
-          formatDateTime, // Passando a função para o template
+          player: mainPlayer, // Adicionando o player principal
+          formatDateTime,
           getVocationName,
-          serverName: configService.get('serverName') || 'Mystic AAC'
+          serverName
         });
       } catch (error) {
-        // Check if error is an instance of Error
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-        logger.error('Erro ao acessar o dashboard', {
-          error: errorMessage,
-          stack: error instanceof Error ? error.stack : 'Sem stack trace'
-        });
-        
-        // Render the error page
-        return reply.view('pages/error', { 
-          title: 'Erro', 
-          message: errorMessage || 'Ocorreu um erro inesperado.' 
+        logger.error('Erro ao acessar o dashboard:', error);
+        return reply.status(500).view('pages/error', {
+          title: 'Erro',
+          message: error instanceof Error ? error.message : 'Erro desconhecido'
         });
       }
     }
@@ -202,30 +192,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Ranking route
   fastify.get('/highscores', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const topPlayers = await prisma.player.findMany({
-        orderBy: [
-          { level: 'desc' },    // Primeiro ordena por level
-          { experience: 'desc' } // Depois por experiência
-        ],
-        take: 50, // Limita aos top 50 jogadores
-        select: {
-          name: true,
-          level: true,
-          vocation: true,
-          experience: true
-        }
-      });
+      const topPlayers = await getTopPlayers(RANKING_LIMIT);
 
       // Formats player data with vocation names
-      const formattedPlayers = topPlayers.map(player => ({
-        ...player,
-        vocation: getVocationName(player.vocation)
-      }));
+      const formattedPlayers = formatPlayers(topPlayers);
 
       return reply.view('pages/ranking', {
         title: 'Ranking - Top Players',
         topPlayers: formattedPlayers,
-        serverName: configService.get('serverName') || 'Mystic AAC',
+        serverName,
         user: request.session?.user
       });
 
@@ -244,7 +219,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.view('pages/download', {
         title: 'Download',
         user: request.session?.user || null,
-        serverName: configService.get('serverName') || 'Mystic AAC'
+        serverName
       });
     } catch (error) {
       logger.error('Erro ao acessar página de download:', error);
