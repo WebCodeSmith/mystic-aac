@@ -24,8 +24,8 @@ interface FormattedNews {
 interface PlayerData {
   name: string;
   level: number;
-  vocation: number; // Mudado de string para number
-  experience: bigint; // Mudado de number para bigint
+  vocation: number;
+  experience: bigint;
 }
 
 // Constants
@@ -127,7 +127,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const user = request.session?.user;
         if (!user?.id) return reply.redirect('/login');
   
-        // Buscar o primeiro personagem do usuário para usar como avatar
+        // Search for the user's first character to use as an avatar
         const [players, news, mainPlayer] = await Promise.all([
           prisma.player.findMany({
             where: { accountId: user.id },
@@ -153,7 +153,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
               name: true,
               level: true,
               vocation: true,
-              experience: true // Adicionando o campo experience
+              experience: true
             }
           })
         ]);
@@ -163,7 +163,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           user,
           players,
           news,
-          player: mainPlayer, // Adicionando o player principal
+          player: mainPlayer,
           formatDateTime,
           getVocationName,
           serverName

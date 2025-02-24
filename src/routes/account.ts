@@ -10,8 +10,31 @@ import { RateLimiter } from '../utils/rate-limiter';
 import { AuthService } from '../services/auth-service';
 import { renderPage } from '../utils/render-helper';
 
+// Interfaces
+interface CreateAccountBody {
+  username: string;
+  email: string;
+  password: string;
+}
+
+interface LoginBody {
+  username: string;
+  password: string;
+}
+
+interface UpdateProfileBody {
+  name?: string;
+  email?: string;
+}
+
 // Constantes
-const SALT_ROUNDS = 10;
+const CONSTANTS = {
+  SALT_ROUNDS: 10,
+  MIN_USERNAME_LENGTH: 3,
+  MAX_USERNAME_LENGTH: 50,
+  MIN_PASSWORD_LENGTH: 6,
+  DEFAULT_ROLE: 'USER'
+} as const;
 
 // Helper para padronizar respostas
 const sendResponse = (reply: FastifyReply, status: number, message: string, data?: any) => {
@@ -22,17 +45,30 @@ const sendResponse = (reply: FastifyReply, status: number, message: string, data
   });
 };
 
-// Função para verificar se o usuário ou email já existem
+// Helper Functions
 async function checkExistingAccount(username: string, email: string) {
-  return await prisma.account.findFirst({
+  return prisma.account.findFirst({
     where: {
       OR: [
         { username },
         { email }
       ]
+    },
+    select: {
+      id: true,
+      username: true,
+      email: true
     }
   });
 }
+
+const sendAccountError = (reply: FastifyReply, status: number, message: string) => {
+  logger.error(`Account Error: ${message}`);
+  return reply.status(status).view('pages/error', {
+    title: 'Erro',
+    message
+  });
+};
 
 // Esquema de validação para criação de conta usando Joi
 const CreateAccountJoiSchema = Joi.object({
@@ -74,121 +110,77 @@ const LoginFastifySchema = {
 
 // Plugin de rotas de conta
 export default async function accountRoutes(fastify: FastifyInstance) {
-  // Rota para exibir a página de criação de conta
-  fastify.get('/create', async (request: FastifyRequest, reply: FastifyReply) => {
-    logger.info('Acessando a página de criação de conta');
-    try {
-      await renderPage(reply, 'account-create', { 
-        title: 'Criar Conta', 
-        error: undefined 
-      });
-      logger.info('Página de criação de conta renderizada com sucesso');
-    } catch (error) {
-      logger.error('Erro ao renderizar a página de criação de conta:', error);
-      return reply.status(500).send('Erro interno ao renderizar a página de criação de conta');
-    }
+  // Criar Conta
+  fastify.get('/create', async (_request, reply) => {
+    return renderPage(reply, 'account-create', { 
+      title: 'Criar Conta'
+    });
   });
 
-  // Rota para processar a criação de conta
-  fastify.post('/create', 
-    { 
-      schema: CreateAccountFastifySchema 
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      logger.info('Iniciando criação de conta');
+  fastify.post<{ Body: CreateAccountBody }>('/create', 
+    { schema: CreateAccountFastifySchema },
+    async (request, reply) => {
+      const { username, email, password } = request.body;
+  
       try {
-        const { username, email, password } = request.body as { 
-          username: string, 
-          email: string, 
-          password: string 
-        };
-
-        logger.info('Dados da conta recebidos:', { username, email });
-
-        // Verificar se usuário ou email já existem
         const existingAccount = await checkExistingAccount(username, email);
-
         if (existingAccount) {
-          logger.warn('Usuário ou email já cadastrado:', { username, email });
-          return sendResponse(reply, 400, 'Usuário ou email já cadastrado. Tente novamente.');
+          return sendAccountError(reply, 400, 'Usuário ou email já cadastrado');
         }
-
-        // Hash da senha
-        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-        // Criar conta
+  
+        const hashedPassword = await bcrypt.hash(password, CONSTANTS.SALT_ROUNDS);
+        const currentDate = new Date();
+        
         const newAccount = await prisma.account.create({
           data: {
             username,
             email,
             password: hashedPassword,
-            role: 'USER', // Papel padrão
+            role: CONSTANTS.DEFAULT_ROLE,
             isActive: true,
-            lastLogin: new Date(),
-            updatedAt: new Date(), // Adicionado para evitar erro
-          },
-          include: {
+            lastLogin: currentDate,
+            updatedAt: currentDate, // Adicionando o campo obrigatório
+            createdAt: currentDate  // Opcional, mas bom ter para consistência
           }
         });
-
-        logger.info(`Nova conta criada: ${username}`);
-        return sendResponse(reply, 201, 'Conta criada com sucesso', newAccount);
-
+  
+        return reply.redirect('/login?success=account-created');
       } catch (error) {
-        logger.error('Erro na criação de conta:', error);
-        return sendResponse(reply, 500, 'Erro interno ao criar conta');
+        return sendAccountError(reply, 500, 'Erro ao criar conta');
       }
     }
   );
 
-    // Rota de login
-    fastify.post('/login', 
-      { 
-        schema: {
-          body: {
-            type: 'object',
-            properties: {
-              username: { type: 'string' },
-              password: { type: 'string' }
-            },
-            required: ['username', 'password']
-          }
-        },
-        preHandler: [
-          preventAuthenticatedAccess
-        ]
-      },
-      async (request: FastifyRequest, reply: FastifyReply) => {
-        const { username, password } = request.body as { username: string; password: string };  
-  
-        // Verificar tentativas de login
-        const canAttemptLogin = RateLimiter.checkLoginAttempts(username, request);
-        if (!canAttemptLogin) {
-          return reply.status(429).send({ message: 'Too many login attempts. Please try again later.' });
-        }
-  
-        try {
-          const user = await AuthService.validateLogin(username, password);
-          if (!user) {
-            return renderPage(reply, 'login', { 
-              title: 'Login', 
-              error: 'Credenciais inválidas' 
-            });
-          }
-  
-          // Criar sessão
-          request.session.user = user;
-  
-          return reply.redirect('/dashboard');
-        } catch (error) {
-          logger.error('Erro no login:', error);
+  // Login
+  fastify.post<{ Body: LoginBody }>('/login',
+    { 
+      schema: LoginFastifySchema,
+      preHandler: [preventAuthenticatedAccess]
+    },
+    async (request, reply) => {
+      const { username, password } = request.body;
+
+      if (!RateLimiter.checkLoginAttempts(username, request)) {
+        return sendAccountError(reply, 429, 'Muitas tentativas de login. Tente novamente mais tarde.');
+      }
+
+      try {
+        const user = await AuthService.validateLogin(username, password);
+        if (!user) {
           return renderPage(reply, 'login', { 
             title: 'Login', 
-            error: error instanceof Error ? error.message : 'Erro interno no servidor'
+            error: 'Credenciais inválidas' 
           });
         }
+
+        request.session.user = user;
+        RateLimiter.clearLoginAttempts(username);
+        return reply.redirect('/dashboard');
+      } catch (error) {
+        return sendAccountError(reply, 500, 'Erro ao realizar login');
       }
-    );
+    }
+  );
 
   // Rota para exibir a página de login
   fastify.get('/login', 
@@ -264,10 +256,7 @@ export default async function accountRoutes(fastify: FastifyInstance) {
           return reply.status(401).redirect('/login');
         }
 
-        const { name, email } = request.body as { 
-          name?: string, 
-          email?: string 
-        };
+        const { name, email } = request.body as UpdateProfileBody;
 
         const updatedAccount = await prisma.account.update({
           where: { id: user.id },
