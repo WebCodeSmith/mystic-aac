@@ -4,7 +4,24 @@ import * as z from 'zod';
 import logger from '../config/logger';
 import * as crypto from 'crypto';
 
-// Esquemas de validação
+// Constants
+const SALT_ROUNDS = 10;
+const TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// Types
+interface AccountResponse {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  lastLogin: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Validation Schemas
 export const LoginSchema = z.object({
   username: z.string()
     .min(3, 'Nome de usuário muito curto')
@@ -30,108 +47,102 @@ export const CreateAccountSchema = z.object({
   password: z.string()
     .min(8, 'Senha muito curta')
     .max(100, 'Senha muito longa')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 'Senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais'),
+    .regex(PASSWORD_REGEX, 'Senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais'),
   confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'Senhas não coincidem',
+  path: ['confirmPassword']
 });
 
 export class AuthService {
-  static async validateLogin(username: string, password: string) {
-    const account = await prisma.account.findUnique({
-      where: { username: username.toLowerCase() }
+  private static async findAccount(username: string, email?: string) {
+    return prisma.account.findFirst({
+      where: {
+        OR: [
+          { username: username.toLowerCase() },
+          ...(email ? [{ email: email.toLowerCase() }] : [])
+        ]
+      }
     });
+  }
+
+  static async validateLogin(username: string, password: string): Promise<AccountResponse> {
+    const account = await this.findAccount(username);
 
     if (!account) {
-      throw new Error('Usuário não encontrado');
+      throw new Error('Credenciais inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(password, account.password);
 
     if (!isPasswordValid) {
-      throw new Error('Senha incorreta');
+      throw new Error('Credenciais inválidas');
     }
 
+    const { password: _, ...accountData } = account;
     return {
-      id: account.id,
-      username: account.username,
-      email: account.email,
-      role: account.role,
-      isActive: account.isActive,
-      lastLogin: account.lastLogin || new Date(),
-      createdAt: account.createdAt,
-      updatedAt: account.updatedAt
+      ...accountData,
+      lastLogin: account.lastLogin || new Date()
     };
   }
 
   static async updateLastLogin(userId: number) {
-    return prisma.account.update({
-      where: { id: userId },
-      data: { lastLogin: new Date() }
-    });
+    try {
+      return await prisma.account.update({
+        where: { id: userId },
+        data: { lastLogin: new Date() }
+      });
+    } catch (error) {
+      logger.error(`Erro ao atualizar último login: ${error}`);
+      throw new Error('Erro ao atualizar último login');
+    }
   }
 
-  static async recoverPassword(email: string, username: string) {
-    const account = await prisma.account.findUnique({
-      where: { 
-        username: username.toLowerCase(),
-        email: email.toLowerCase()
-      }
-    });
+  static async recoverPassword(email: string, username: string): Promise<boolean> {
+    const account = await this.findAccount(username, email);
 
     if (!account) {
       throw new Error('Conta não encontrada');
     }
 
-    const token = await AuthService.generateRecoveryToken(account);
-    await AuthService.sendRecoveryEmail(account, token);
+    const token = await this.generateRecoveryToken(account);
+    await this.sendRecoveryEmail(account, token);
 
     return true;
   }
 
-  static async generateRecoveryToken(user: any): Promise<string> {
-    // Gerar um token único para recuperação de senha
+  static async generateRecoveryToken(user: { id: number }): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
     
-    // Salvar o token no banco de dados com expiração
     await prisma.passwordreset.create({
       data: {
         accountId: user.id,
         token,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas
+        expiresAt: new Date(Date.now() + TOKEN_EXPIRY)
       }
     });
 
     return token;
   }
 
-  static async sendRecoveryEmail(user: any, token: string): Promise<void> {
-    // TODO: Implementar o envio real de e-mail
-    logger.info(`[MOCK] E-mail de recuperação enviado para ${user.email} com token: ${token}`);
+  static async sendRecoveryEmail(user: { email: string }, token: string): Promise<void> {
+    // TODO: Implement actual email sending
+    logger.info(`[MOCK] Recovery email sent to ${user.email} with token: ${token}`);
   }
 
   static async createAccount(data: z.infer<typeof CreateAccountSchema>) {
     try {
-      const { username, email, password, confirmPassword } = data;
+      const { username, email, password } = data;
 
-      if (password !== confirmPassword) {
-        throw new Error('Senhas não coincidem');
-      }
-
-      const existingAccount = await prisma.account.findFirst({
-        where: {
-          OR: [
-            { username: username.toLowerCase() },
-            { email: email.toLowerCase() }
-          ]
-        }
-      });
+      const existingAccount = await this.findAccount(username, email);
 
       if (existingAccount) {
         throw new Error('Usuário ou e-mail já cadastrado');
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-      const account = await prisma.account.create({
+      return await prisma.account.create({
         data: {
           username: username.toLowerCase(),
           email: email.toLowerCase(),
@@ -141,11 +152,9 @@ export class AuthService {
           updatedAt: new Date()
         }
       });
-
-      return account;
-    } catch (error: unknown) {
-      logger.error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      throw new Error(`Erro ao criar conta: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } catch (error) {
+      logger.error('Erro ao criar conta:', error);
+      throw new Error(error instanceof Error ? error.message : 'Erro ao criar conta');
     }
   }
 }
