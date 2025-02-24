@@ -129,7 +129,7 @@ export class Server {
    *
    * @returns {Promise<void>} A promise that resolves when the routes are registered.
    */
-  private async registerRoutes() {
+  private async registerRoutes() {    
     // Registrar rota raiz sem prefixo
     await this.app.register(authRoutes);
 

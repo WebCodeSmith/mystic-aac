@@ -1,114 +1,113 @@
 import logger from '../config/logger';
-import { FastifyInstance } from 'fastify';
-import Redis from 'ioredis';
-import { PrismaClient } from '@prisma/client';
+
+// Constants
+const SHUTDOWN_SIGNALS = ['SIGINT', 'SIGTERM'] as const;
+const CLOSE_METHODS = ['close', 'quit', '$disconnect', 'disconnect'] as const;
+const DAY_IN_MS = 86400000;
+
+// Types
+type ShutdownSignal = typeof SHUTDOWN_SIGNALS[number];
+type CloseMethod = typeof CLOSE_METHODS[number];
+
+interface Resource {
+  [key: string]: any;
+  [key: symbol]: any;
+}
+
+interface SecureConfig {
+  secure: boolean;
+  sameSite: 'strict' | 'lax';
+  maxAge: number;
+}
 
 // Tipos de ambiente
 export type NodeEnvironment = 'development' | 'production' | 'test';
 
-// Utilitário de tratamento de erros centralizado
+// Error Handler Class
 export class ServerErrorHandler {
   static criticalExit(context: string, error: unknown, exitCode = 1): never {
-    logger.error(`[CRITICAL ERROR] ${context}:`, error instanceof Error ? error.message : String(error));
-    
-    // Log adicional para erros desconhecidos
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error(`[CRITICAL ERROR] ${context}:`, errorMessage);
+
     if (!(error instanceof Error)) {
-      logger.error('Erro não é uma instância de Error. Detalhes:', JSON.stringify(error));
+      logger.error('Unknown error type. Details:', JSON.stringify(error));
     }
 
-    // Desligar o processo com código de erro
     process.exit(exitCode);
   }
 
-  static gracefulShutdown(context: string, shutdownFn: () => Promise<void>) {
-    return async () => {
-      try {
-        logger.info(`Iniciando desligamento gracioso: ${context}`);
-        await shutdownFn();
-        logger.info(`Desligamento gracioso concluído: ${context}`);
-        process.exit(0);
-      } catch (error) {
-        this.criticalExit(`Falha no desligamento gracioso - ${context}`, error);
-      }
-    };
+  static async gracefulShutdown(
+    context: string, 
+    shutdownFn: () => Promise<void>
+  ): Promise<void> {
+    try {
+      logger.info(`Starting graceful shutdown: ${context}`);
+      await shutdownFn();
+      logger.info(`Graceful shutdown completed: ${context}`);
+      process.exit(0);
+    } catch (error) {
+      this.criticalExit(`Graceful shutdown failed - ${context}`, error);
+    }
   }
 }
 
-// Utilitário de gerenciamento de recursos
+// Resource Manager Class
 export class ResourceManager {
-  private resources: Map<string, any> = new Map();
+  private resources = new Map<string, Resource>();
 
-  register(name: string, resource: any) {
+  register<T extends Resource>(name: string, resource: T): void {
     this.resources.set(name, resource);
   }
 
-  // Método público para recuperar recursos
-  public get<T>(name: string): T {
+  get<T>(name: string): T {
     const resource = this.resources.get(name);
     if (!resource) {
-      throw new Error(`Recurso ${name} não encontrado`);
+      throw new Error(`Resource ${name} not found`);
     }
-    return resource;
+    return resource as T;
   }
 
-  // Método para verificar se um recurso existe
-  public hasResource(name: string): boolean {
+  has(name: string): boolean {
     return this.resources.has(name);
   }
 
-  // Método genérico para fechar recursos
-  async closeAll() {
-    const closeTasks: Promise<void>[] = [];
-
-    // Iterar sobre todos os recursos registrados
-    for (const [name, resource] of this.resources.entries()) {
-      if (typeof resource === 'object' && resource !== null) {
-        // Verificar métodos de fechamento comuns
-        const closeMethodNames = ['close', 'quit', '$disconnect', 'disconnect'];
-        
-        for (const methodName of closeMethodNames) {
-          if (typeof (resource as any)[methodName] === 'function') {
-            try {
-              const closeTask = (resource as any)[methodName]();
-              if (closeTask instanceof Promise) {
-                closeTasks.push(closeTask);
-                break; // Parar após encontrar o primeiro método válido
-              }
-            } catch (error) {
-              console.warn(`Erro ao fechar recurso ${name} com método ${methodName}:`, error);
-            }
-          }
+  private async closeResource(name: string, resource: Resource): Promise<void> {
+    for (const method of CLOSE_METHODS) {
+      if (typeof resource[method] === 'function') {
+        try {
+          await Promise.resolve(resource[method]());
+          return;
+        } catch (error) {
+          logger.warn(`Failed to close resource ${name} with method ${method}:`, error);
         }
       }
     }
+  }
+
+  async closeAll(): Promise<void> {
+    const closePromises = Array.from(this.resources.entries()).map(
+      ([name, resource]) => this.closeResource(name, resource)
+    );
 
     try {
-      await Promise.allSettled(closeTasks);
-      console.log('Todos os recursos fechados com sucesso');
+      await Promise.allSettled(closePromises);
+      logger.info('All resources closed successfully');
     } catch (error) {
-      console.error('Erro durante fechamento de recursos:', error);
+      logger.error('Error during resource cleanup:', error);
       throw error;
     }
   }
 
-  setupGracefulShutdown(context: string = 'Recursos do Servidor') {
-    const signals = ['SIGINT', 'SIGTERM'];
-    signals.forEach(signal => {
-      process.on(signal, async () => {
-        logger.info(`Recebido sinal ${signal}. Iniciando desligamento: ${context}`);
-        try {
-          await this.closeAll();
-          logger.info(`Desligamento concluído: ${context}`);
-          process.exit(0);
-        } catch (err) {
-          ServerErrorHandler.criticalExit(`Erro durante desligamento - ${context}`, err);
-        }
-      });
+  setupGracefulShutdown(context = 'Server Resources'): void {
+    SHUTDOWN_SIGNALS.forEach(signal => {
+      process.on(signal, () => 
+        ServerErrorHandler.gracefulShutdown(context, () => this.closeAll())
+      );
     });
   }
 }
 
-// Utilitário de configuração condicional
+// Configuration Helper Class
 export class ConfigurationHelper {
   static getEnvironmentConfig<T>(
     defaultValue: T, 
@@ -118,50 +117,56 @@ export class ConfigurationHelper {
     return environment === 'production' ? productionValue : defaultValue;
   }
 
-  static getSecureConfig(environment: NodeEnvironment) {
+  static getSecureConfig(environment: NodeEnvironment): SecureConfig {
+    const isProduction = environment === 'production';
     return {
-      secure: environment === 'production',
-      sameSite: environment === 'production' ? 'strict' as const : 'lax' as const,
-      maxAge: environment === 'production' ? 86400000 : 0 // 1 dia em produção
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      maxAge: isProduction ? DAY_IN_MS : 0
     };
   }
 }
 
-// Helper para importação dinâmica
+// Dynamic Import Helper Class
 export class DynamicImportHelper {
-  static resolveModule(moduleToImport: any, preferredImportStrategies: string[] = ['default', 'RedisStore']) {
-    // Estratégias de importação
-    const importStrategies = [
+  static resolveModule<T>(
+    moduleToImport: unknown, 
+    preferredStrategies: string[] = ['default', 'RedisStore']
+  ): T {
+    const strategies = [
       () => typeof moduleToImport === 'function' ? moduleToImport : null,
-      ...preferredImportStrategies.map(strategy => 
-        () => typeof (moduleToImport as any)[strategy] === 'function' 
-          ? (moduleToImport as any)[strategy] 
-          : null
+      ...preferredStrategies.map(strategy => 
+        () => {
+          const mod = moduleToImport as Record<string, unknown>;
+          return typeof mod[strategy] === 'function' ? mod[strategy] : null;
+        }
       )
     ];
 
-    // Tentar cada estratégia
-    for (const strategy of importStrategies) {
-      const resolvedModule = strategy();
-      if (resolvedModule) return resolvedModule;
+    for (const strategy of strategies) {
+      const resolved = strategy();
+      if (resolved) return resolved as T;
     }
 
-    throw new Error('Nenhuma estratégia de importação válida encontrada');
+    throw new Error('No valid import strategy found');
   }
 }
 
-// Utilitário de logging padronizado
+// Server Logger Class
 export class ServerLogger {
-  static serverStart(port: number, environment: NodeEnvironment) {
-    logger.info(`🚀 Servidor iniciado na porta ${port} [${environment}]`);
+  static serverStart(port: number, environment: NodeEnvironment): void {
+    logger.info(`🚀 Server started on port ${port} [${environment}]`);
   }
 
-  static developmentMode() {
-    logger.warn('🛠️ Servidor rodando em modo de desenvolvimento');
+  static developmentMode(): void {
+    logger.warn('🛠️ Server running in development mode');
   }
 
-  static serviceConnection(serviceName: string, status: 'connected' | 'disconnected') {
+  static serviceConnection(
+    serviceName: string, 
+    status: 'connected' | 'disconnected'
+  ): void {
     const emoji = status === 'connected' ? '✅' : '❌';
-    logger.info(`${emoji} Serviço ${serviceName}: ${status}`);
+    logger.info(`${emoji} Service ${serviceName}: ${status}`);
   }
 }
