@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { AppError } from './error-handler';
 import logger from '../config/logger';
 import { User } from '../types/fastify-session';
+import { getSessionUser } from '../types/fastify-custom';
 
 // Estender o tipo da sessão para incluir a propriedade user
 declare module '@fastify/session' {
@@ -47,6 +48,17 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
     return;
   } catch (error) {
     return reply.status(500).redirect('/login');
+  }
+};
+
+export const requireAdmin = async (request: FastifyRequest, reply: FastifyReply) => {
+  const user = await getSessionUser(request);
+  
+  if (!user?.id || user.role !== 'ADMIN') {
+    return reply.status(403).send({
+      error: 'Forbidden',
+      message: 'Acesso restrito a administradores'
+    });
   }
 };
 
