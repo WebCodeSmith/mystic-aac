@@ -41,7 +41,6 @@
             </li>
         </ul>
     </div>
-
     <div class="dashboard-content">
         <div class="dashboard-header">
             <div class="dashboard-actions">
@@ -50,8 +49,10 @@
 
         <div class="dashboard-stats">
             <div class="dashboard-stat-card">
-                <h3>Informações da Conta</h3>
-                <p>Último Login: <%= user.lastLogin ? user.lastLogin.toLocaleString() : 'Nunca' %></p>
+                <div class="dashboard-card">
+                    <h2>Informações da Conta</h2>
+                    <p>Último Login: <%= formatDateTime(user.lastLogin) %></p>
+                </div>
                 <p>Status: <%= user.isActive ? 'Ativo' : 'Inativo' %></p>
             </div>
 

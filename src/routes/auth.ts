@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 import { requireAuth } from '../middleware/auth-middleware';
 import { getSessionUser } from '../types/fastify-custom';
 import logger from '../config/logger';
-import { ConfigService } from '../services/config.service';
+import { ConfigService, formatDateTime } from '../services/config.service';
 import { renderPage } from '../utils/render-helper';
 import { Vocation, getVocationName } from '../config/config';
 
@@ -167,6 +167,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           player,
           players,
           news,
+          formatDateTime, // Passando a função para o template
           getVocationName,
           serverName: configService.get('serverName') || 'Mystic AAC'
         });

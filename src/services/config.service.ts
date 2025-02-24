@@ -1,6 +1,19 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+export function formatDateTime(dateString: string | number | Date) {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+  };
+  return date.toLocaleString('pt-BR', options);
+}
+
 // Esquema de validação para configurações
 const ConfigSchema = z.object({
   port: z.number().min(0).max(65535).default(3000),
