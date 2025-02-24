@@ -25,55 +25,6 @@ interface NewsItem {
 // Constantes
 const ONLINE_PLAYERS_COUNT = 42; // Replace with real/dynamic value
 
-// Renderização consistente
-const renderPageWithOnlinePlayers = async (
-  reply: FastifyReply, 
-  page: string, 
-  options: { 
-    title: string, 
-    error?: string, 
-    success?: string,
-    [key: string]: any  // Allow additional properties
-  }
-) => {
-  // Security checks
-  if (!reply || !page) {
-    logger.error('Parâmetros inválidos para renderização', { 
-      reply: !!reply, 
-      page 
-    });
-    return reply.status(500).send('Erro interno: Parâmetros de renderização inválidos');
-  }
-
-  // Check if the response has already been sent
-  if (reply.sent) {
-    logger.warn('Tentativa de renderizar página já enviada', { page });
-    return reply;
-  }
-
-  try {
-    // Render page with online player count
-    return renderPage(reply, page, { 
-      ...options, 
-      onlinePlayers: ONLINE_PLAYERS_COUNT 
-    });
-  } catch (error) {
-    // Detailed error log
-    logger.error('Erro ao renderizar página com jogadores online', {
-      page,
-      error: error instanceof Error ? error.message : 'Erro desconhecido',
-      stack: error instanceof Error ? error.stack : 'Sem stack trace'
-    });
-
-    // Ensure only one response is sent
-    if (!reply.sent) {
-      return reply.status(500).send('Erro interno ao renderizar página');
-    }
-
-    return reply;
-  }
-};
-
 // Schema for validating character data
 const characterCreateSchema = z.object({
   name: z.string()
@@ -113,7 +64,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           { level: 'desc' },
           { experience: 'desc' }
         ],
-        take: 3, // limit to 3 players
+        take: 3,
         select: {
           name: true,
           level: true,
@@ -137,10 +88,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
         vocation: getVocationName(player.vocation)
       }));
 
-      const user = await getSessionUser(request);
+      // Use reply.view directly instead of renderPageWithOnlinePlayers
       return reply.view('pages/index', {
         title: 'Início',
-        user,
+        user: request.session?.user || null,
         news: formattedNews,
         topPlayers: formattedPlayers,
         onlinePlayers: ONLINE_PLAYERS_COUNT,
@@ -148,7 +99,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       logger.error('Erro ao renderizar página inicial:', error);
-      return reply.status(500).send('Erro ao carregar página inicial');
+      return reply.status(500).view('pages/error', {
+        title: 'Erro',
+        message: 'Erro ao carregar página inicial'
+      });
     }
   });
 

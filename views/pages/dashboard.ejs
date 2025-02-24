@@ -3,23 +3,14 @@
 <div class="dashboard-container">
     <div class="dashboard-sidebar">
         <div class="dashboard-profile">
-            <% if (player) { %>
-                <img src="<%= player && player.avatar ? player.avatar : '/images/default-avatar.png' %>" alt="Avatar" class="dashboard-profile-image">
-                <div class="dashboard-profile-name"><%= player ? player.name : user.username %></div>
-                <div class="dashboard-profile-level">
-                    <% if (player) { %>
-                        Nível <%= player.level || 1 %> | <%= player.vocation %>
-                    <% } else { %>
-                        Nível 1
-                    <% } %>
-                </div>
-            <% } else { %>
-                <img src="/images/default-avatar.png" alt="Avatar" class="dashboard-profile-image">
+            <img src="<%= player && player.avatar ? player.avatar : '/images/default-avatar.png' %>" alt="Avatar" class="dashboard-profile-image">
+            <div class="dashboard-profile-info">
                 <div class="dashboard-profile-name"><%= user.username %></div>
+                <div class="dashboard-profile-email"><%= user.email %></div>
                 <div class="dashboard-profile-level">
-                    Nível 1
+                    <%= user.isPremium ? 'Conta Premium' : 'Conta Free' %>
                 </div>
-            <% } %>
+            </div>
         </div>
 
         <ul class="dashboard-menu">
@@ -53,11 +44,7 @@
 
     <div class="dashboard-content">
         <div class="dashboard-header">
-            <div class="dashboard-title">
-                <h1>Painel do Jogador: <%= user.username %></h1>
-            </div>
             <div class="dashboard-actions">
-                <button class="btn-primary">Editar Perfil</button>
             </div>
         </div>
 
